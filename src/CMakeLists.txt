@@ -4,6 +4,7 @@ add_subdirectory(dataBlock)
 add_subdirectory(output)
 add_subdirectory(rkl)
 add_subdirectory(gravity)
+add_subdirectory(forcing)
 add_subdirectory(utils)
 # NOTE: vsh file are added by the root CMakeLists along with dependencies to the SHTNS library
 
