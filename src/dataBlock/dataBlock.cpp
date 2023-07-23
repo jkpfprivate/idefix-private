@@ -10,6 +10,7 @@
 #include "dataBlock.hpp"
 #include "fluid.hpp"
 #include "gravity.hpp"
+#include "forcing/forcing.hpp"
 #include "planetarySystem.hpp"
 #include "vtk.hpp"
 #include "dump.hpp"
@@ -167,6 +168,12 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
     this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
   #endif // VSH == YES
+
+  // Initialise forcing if needed
+  if(input.CheckBlock("Forcing")) {
+    this->forcing = std::make_unique<Forcing>(input, this);
+    this->haveForcing = true;
+  }
 
   // Initialise dust grains if needed
   if(input.CheckBlock("Dust")) {
@@ -342,6 +349,7 @@ void DataBlock::ShowConfig() {
     idfx::cout << "Vsh: ENABLED." << std::endl;
     idfx::cout << "Vsh: lmax=" << this->lmax << " and mmax=" << this->mmax << "." << std::endl;
   #endif // VSH == YES
+  if(haveForcing) forcing->ShowConfig();
 
   if(haveUserStepFirst) idfx::cout << "DataBlock: User's first step has been enrolled."
                                    << std::endl;
