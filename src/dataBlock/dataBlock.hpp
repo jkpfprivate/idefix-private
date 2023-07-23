@@ -19,6 +19,7 @@
 #include "gridHost.hpp"
 #include "planetarySystem.hpp"
 #include "gravity.hpp"
+#include "forcing/forcing.hpp"
 #include "stateContainer.hpp"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +38,7 @@ class Dump;
 class Xdmf;
 class Fargo;
 class Gravity;
+class Forcing;
 class PlanetarySystem;
 template<typename Phys>
 class Fluid;
@@ -177,6 +179,10 @@ class DataBlock {
     IdefixArray4D<Kokkos::complex<real>> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
     IdefixArray4D<Kokkos::complex<real>> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
   #endif // VSH == YES
+
+  // Do we have Forcing ?
+  bool haveForcing{false};
+  std::unique_ptr<Forcing> forcing;
 
   // User step functions (before or after the main integrator step)
   void LaunchUserStepFirst();     ///< perform user-defined step before main integration step
