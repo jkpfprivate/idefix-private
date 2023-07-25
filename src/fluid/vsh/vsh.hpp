@@ -16,6 +16,7 @@
 #define VSH_HPP_
 
 #include "idefix.hpp"
+#include "dataBlock.hpp"
 #include "shtns.h"
 
 class VSH {
@@ -46,7 +47,7 @@ class VSH {
     IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
     IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
 
-    void InitVSH(int, int, int, int, int, int, int, int, int, int, IdefixArray1D<real>, IdefixArray1D<real>, int, int);
+    void InitVSH(DataBlock *, int, int, int, int);
     void Generatejl();
     void GenerateCellVSH(int);
     void GenerateInterfaceVSH(int);
