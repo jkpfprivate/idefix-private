@@ -18,21 +18,22 @@ VSH::VSH() {
 // Default constructor
 } 
 
-void VSH::InitVSH(int nphi, int ntheta, int nphi_proc, int ntheta_proc, int nr_proc, int koffset, int joffset, int kghost, int jghost, int ighost, IdefixArray1D<real> x1,  IdefixArray1D<real> x1l,int lmax, int mmax) {
+void VSH::InitVSH(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
   this->nphi = nphi;
-  this->nphi_proc = nphi_proc;
+  this->nphi_proc = datain->np_int[KDIR];
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
   this->ntheta = ntheta;
-  this->ntheta_proc = ntheta_proc;
+  this->ntheta_proc = datain->np_int[JDIR];
   this->ntheta_shtns = 2*ntheta + 1;
-  this->nr_proc = nr_proc;
-  this->koffset = koffset;
-  this->joffset = joffset;
-  this->kghost = kghost;
-  this->jghost = jghost;
-  this->ighost = ighost;
-  this->x1 = x1;
-  this->x1l = x1l;
+  this->nr_proc = datain->np_int[IDIR];
+  this->koffset =  datain->gbeg[KDIR] - datain->nghost[KDIR];
+  this->joffset =  datain->gbeg[JDIR] - datain->nghost[JDIR];
+  this->kghost = datain->nghost[KDIR];
+  this->jghost = datain->nghost[JDIR];
+  this->ighost = datain->nghost[IDIR];
+  this->x1 = datain->x[IDIR];
+  this->x1l = datain->xl[IDIR];
+
   this->lmax = lmax;
   this->mmax = mmax;
 
