@@ -238,6 +238,7 @@ struct Fluid_CalcRHSFunctor {
     }
 
     if(hydro->data->haveForcing) {
+      hydro->data->forcing->ComputeForcing(dt);
       forcingTerm = hydro->data->forcing->forcingTerm;
       haveForcingTerm = hydro->data->haveForcing;
     }
@@ -512,6 +513,7 @@ struct Fluid_CalcRHSFunctor {
 
     // Forcing
     if(haveForcingTerm) {
+//std::cout << forcingTerm(1, 12,12,12) << std::endl;
       rhs[MX1+dir] += dt * Vc(RHO,k,j,i) * forcingTerm(dir,k,j,i);
       if constexpr(Phys::pressure) {
         //  rho * v . f, where rhov is taken as a  volume average of Flux(RHO)
