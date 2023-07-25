@@ -4,11 +4,6 @@ add_subdirectory(constrainedTransport)
 add_subdirectory(eos)
 add_subdirectory(RiemannSolver)
 add_subdirectory(tracer)
-if(Idefix_VSH)
-  add_subdirectory(vsh)
-  target_include_directories(idefix PUBLIC $ENV{SHTNS_INC} vsh)
-  target_link_libraries(idefix $ENV{SHTNS_LIB}/libshtns.a -lfftw3)
-endif()
 
 
 target_sources(idefix
