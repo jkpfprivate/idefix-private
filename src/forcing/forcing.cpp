@@ -83,6 +83,7 @@ void Forcing::ComputeForcing(real dt) {
   idfx::pushRegion("Forcing::ComputeForcing");
   
   ResetForcingTerm();
+  IdefixArray1D<real> x1 = data->x[IDIR];
 
   #if GEOMETRY == CARTESIAN
     IDEFIX_ERROR("Forcing in CARTESIAN geometry not implemented");
@@ -94,26 +95,32 @@ void Forcing::ComputeForcing(real dt) {
     IDEFIX_ERROR("Forcing in CYLINDRICAL geometry not implemented");
   #endif // GEOMETRY == CYLINDRICAL
   #if GEOMETRY == SPHERICAL
-//   idefix_for("forcingTerm",data.nghost[KDIR],data.np_int[KDIR]+data.nghost[KDIR],data.nghost[JDIR],data.np_int[JDIR]+data.nghost[JDIR],data.nghost[IDIR],data.np_int[IDIR]+data.nghost[IDIR],
-    idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
-                KOKKOS_LAMBDA (int k, int j, int i) {
-                  real forcing_MX1=0;
-                  real forcing_MX2=0;
-                  real forcing_MX3=0;
-                  for (int l=0; l<this->lmax; l++) {
-                    for (int m=0; m<this->mmax; m++) {
-                      forcing_MX1 += this->vsh->Ylm_r(l,m,k,j)*this->OUprocesses.ouValues(0,l,m);
-                      forcing_MX2 += this->vsh->Slm_th(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + this->vsh->Tlm_th(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
-                      forcing_MX3 += vsh->Slm_phi(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + this->vsh->Tlm_phi(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
+//    idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
+//                KOKKOS_LAMBDA (int k, int j, int i) {
+    idefix_for("ComputeForcingThetaPhi", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR],
+                KOKKOS_LAMBDA (int k, int j) {
+      idefix_for("ComputeForcingR", 0, data->np_tot[IDIR],
+                  KOKKOS_LAMBDA (int i) {
+                    real forcing_MX1=0;
+                    real forcing_MX2=0;
+                    real forcing_MX3=0;
+                    for (int l=0; l<this->lmax; l++) {
+                      real jli = std::sph_bessel(l, x1(i));
+//                      real jli = 1.;
+                      for (int m=0; m<this->mmax; m++) {
+                        forcing_MX1 += jli*this->vsh->Ylm_r(l,m,k,j)*this->OUprocesses.ouValues(0,l,m);
+                        forcing_MX2 += jli*this->vsh->Slm_th(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_th(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
+                        forcing_MX3 += jli*vsh->Slm_phi(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_phi(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
+                      }
                     }
-                  }
-                  forcing_MX1 *= this->frms;
-                  forcing_MX2 *= this->frms;
-                  forcing_MX3 *= this->frms;
+                    forcing_MX1 *= this->frms;
+                    forcing_MX2 *= this->frms;
+                    forcing_MX3 *= this->frms;
    
-                  this->forcingTerm(IDIR,k,j,i) += forcing_MX1;
-                  this->forcingTerm(JDIR,k,j,i) += forcing_MX2;
-                  this->forcingTerm(KDIR,k,j,i) += forcing_MX3;
+                    this->forcingTerm(IDIR,k,j,i) += forcing_MX1;
+                    this->forcingTerm(JDIR,k,j,i) += forcing_MX2;
+                    this->forcingTerm(KDIR,k,j,i) += forcing_MX3;
+      });
     });
   #endif // GEOMETRY == SPHERICAL
 
