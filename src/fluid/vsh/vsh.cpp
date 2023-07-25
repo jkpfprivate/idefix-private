@@ -18,20 +18,26 @@ VSH::VSH() {
 // Default constructor
 } 
 
-void VSH::InitVSH(int nphi, int ntheta, int nphi_proc, int ntheta_proc, int koffset, int joffset, int kghost, int jghost, int lmax, int mmax) {
+void VSH::InitVSH(int nphi, int ntheta, int nphi_proc, int ntheta_proc, int nr_proc, int koffset, int joffset, int kghost, int jghost, int ighost, IdefixArray1D<real> x1,  IdefixArray1D<real> x1l,int lmax, int mmax) {
   this->nphi = nphi;
   this->nphi_proc = nphi_proc;
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
   this->ntheta = ntheta;
   this->ntheta_proc = ntheta_proc;
   this->ntheta_shtns = 2*ntheta + 1;
+  this->nr_proc = nr_proc;
   this->koffset = koffset;
   this->joffset = joffset;
   this->kghost = kghost;
   this->jghost = jghost;
+  this->ighost = ighost;
+  this->x1 = x1;
+  this->x1l = x1l;
   this->lmax = lmax;
   this->mmax = mmax;
 
+  this->jl = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
+  this->jls = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
   this->Ylm_r = IdefixArray4D<real> ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Slm_th = IdefixArray4D<real> ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Slm_phi = IdefixArray4D<real> ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
@@ -42,6 +48,15 @@ void VSH::InitVSH(int nphi, int ntheta, int nphi_proc, int ntheta_proc, int koff
   this->Slm_phis = IdefixArray4D<real> ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+}
+
+void VSH::Generatejl() {
+  for(int l = 0; l < this->lmax; l++) {
+    for(int i = 0; i < nr_proc+2*ighost; i++) {
+      this->jl(l,i) = std::sph_bessel(l, x1(i));
+      this->jls(l,i) = std::sph_bessel(l, x1l(i));
+    }
+  }
 }
 
 void VSH::GenerateCellVSH(int write) {
