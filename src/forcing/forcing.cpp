@@ -50,6 +50,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   int ntheta = input.Get<int>("Grid","X2-grid",2); // number of points in the latitude direction  (constraint: nlat >= lmax+1)
   int nphi = input.Get<int>("Grid","X3-grid",2);  // number of points in the longitude direction (constraint: nphi >= 2*mmax+1)
+  int nr_proc = data->np_int[IDIR];
   int ntheta_proc = data->np_int[JDIR];
   int nphi_proc = data->np_int[KDIR];
   int koffset = data->gbeg[KDIR] - data->nghost[KDIR];
@@ -57,6 +58,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   DataBlockHost d(*datain, 1);
   this->vsh = std::make_unique<Vsh>(&d);
   this->vsh->GenerateCellVsh(0);
+  this->vsh->Generatejl();
 
   this->OUprocesses.InitProcesses(lmax,mmax,0.,t_corr);
 
@@ -105,8 +107,7 @@ void Forcing::ComputeForcing(real dt) {
                     real forcing_MX2=0;
                     real forcing_MX3=0;
                     for (int l=0; l<this->lmax; l++) {
-                      real jli = std::sph_bessel(l, x1(i));
-//                      real jli = 1.;
+                      real jli = vsh->jl(l,i);
                       for (int m=0; m<this->mmax; m++) {
                         forcing_MX1 += jli*this->vsh->Ylm_r(l,m,k,j)*this->OUprocesses.ouValues(0,l,m);
                         forcing_MX2 += jli*this->vsh->Slm_th(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_th(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
