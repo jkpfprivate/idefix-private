@@ -60,20 +60,16 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(int lmax, int mmax, real mean, re
   }
 }
 
-void OrnsteinUhlenbeckProcesses::UpdateProcesses(real dt, real epsilon) {
+void OrnsteinUhlenbeckProcesses::UpdateProcesses(real dt, real epsilon_Ylm, real epsilon_Slm, real epsilon_Tlm) {
   real value;
-//        std::cout << this->mmax << std::endl;
-  for (int comp=0; comp<3; comp++) {
-    for (int l=0; l<this->lmax; l++) {
-      for (int m=0; m<this->mmax; m++) {
-        value = ouProcesses[comp*(this->lmax*this->mmax)+l*this->mmax+m].GetNextValue(dt,epsilon);
-//        std::cout << comp << std::endl;
-//        std::cout << l << std::endl;
-//        std::cout << m << std::endl;
-//        std::cout << value << std::endl;
-//        std::cout << std::endl;
-        ouValues(comp,l,m) = value;
-      }
+  for (int l=0; l<this->lmax; l++) {
+    for (int m=0; m<this->mmax; m++) {
+      value = ouProcesses[0*(this->lmax*this->mmax)+l*this->mmax+m].GetNextValue(dt, epsilon_Ylm);
+      ouValues(0,l,m) = value;
+      value = ouProcesses[1*(this->lmax*this->mmax)+l*this->mmax+m].GetNextValue(dt, epsilon_Slm);
+      ouValues(1,l,m) = value;
+      value = ouProcesses[2*(this->lmax*this->mmax)+l*this->mmax+m].GetNextValue(dt, epsilon_Tlm);
+      ouValues(2,l,m) = value;
     }
   }
 //        std::cout << "Done" << std::endl;

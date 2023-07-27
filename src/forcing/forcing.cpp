@@ -36,11 +36,23 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       idfx::cout << "No correlation time provided. Assuming 1." << std::endl;
       this->t_corr = 1.;
     }
-    if(input.CheckEntry("Forcing","frms")>=0) {
-      this->frms = input.Get<real>("Forcing","frms",0);
+    if(input.CheckEntry("Forcing","frms_Ylm")>=0) {
+      this->frms_Ylm = input.Get<real>("Forcing","frms_Ylm",0);
     } else {
-      idfx::cout << "No rms forcing provided. Assuming 1." << std::endl;
-      this->frms = 1.;
+      idfx::cout << "No rms forcing for Ylm provided. Assuming 1." << std::endl;
+      this->frms_Ylm = 1.;
+    }
+    if(input.CheckEntry("Forcing","frms_Slm")>=0) {
+      this->frms_Slm = input.Get<real>("Forcing","frms_Slm",0);
+    } else {
+      idfx::cout << "No rms forcing for Slm provided. Assuming 1." << std::endl;
+      this->frms_Slm = 1.;
+    }
+    if(input.CheckEntry("Forcing","frms_Tlm")>=0) {
+      this->frms_Tlm = input.Get<real>("Forcing","frms_Tlm",0);
+    } else {
+      idfx::cout << "No rms forcing for Tlm provided. Assuming 1." << std::endl;
+      this->frms_Tlm = 1.;
     }
   #endif // GEOMETRY == SPHERICAL
 
@@ -71,7 +83,10 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
 void Forcing::ShowConfig() {
   #if GEOMETRY == SPHERICAL
-    idfx::cout << "Forcing: ENABLED with frms=" << frms <<", t_corr=" << this->t_corr << ", lmax=" << lmax << " and mmax=" << mmax << " ." << std::endl;
+    idfx::cout << "Forcing: ENABLED." << std::endl;
+    idfx::cout << "Forcing: lmax=" << lmax << " and mmax=" << mmax << " ." << std::endl;
+    idfx::cout << "Forcing: t_corr=" << this->t_corr << " ." << std::endl;
+    idfx::cout << "Forcing: frms_Ylm=" << frms_Ylm << ", frms_Slm=" << frms_Slm << ", frms_Tlm =" << frms_Tlm << " ." << std::endl;
   #endif // GEOMETRY == SPHERICAL
 //    if(skipGravity>1) {
 //      idfx::cout << "Gravity: gravity field will be updated every " << skipGravity
@@ -114,9 +129,6 @@ void Forcing::ComputeForcing(real dt) {
                         forcing_MX3 += jli*vsh->Slm_phi(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_phi(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
                       }
                     }
-                    forcing_MX1 *= this->frms;
-                    forcing_MX2 *= this->frms;
-                    forcing_MX3 *= this->frms;
    
                     this->forcingTerm(IDIR,k,j,i) += forcing_MX1;
                     this->forcingTerm(JDIR,k,j,i) += forcing_MX2;
@@ -125,7 +137,7 @@ void Forcing::ComputeForcing(real dt) {
     });
   #endif // GEOMETRY == SPHERICAL
 
-  OUprocesses.UpdateProcesses(dt, frms);
+  OUprocesses.UpdateProcesses(dt, frms_Ylm, frms_Slm, frms_Tlm);
   idfx::popRegion();
 }
 

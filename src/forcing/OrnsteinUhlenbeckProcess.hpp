@@ -56,7 +56,7 @@ public:
 //    InitProcess(int, real, real, real, real);
     void InitProcesses(int, int, real, real);
 //    real getNextValue();
-    void UpdateProcesses(real, real);
+    void UpdateProcesses(real, real, real, real);
 };
 
 #endif  // ORNSTEIN_UHLENBECK_PROCESS_HPP

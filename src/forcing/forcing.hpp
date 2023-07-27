@@ -43,7 +43,9 @@ class Forcing {
   DataBlock *data;
 
   real t_corr;
-  real frms;
+  real frms_Ylm;
+  real frms_Slm;
+  real frms_Tlm;
   OrnsteinUhlenbeckProcesses OUprocesses;
 
   #if GEOMETRY == SPHERICAL
