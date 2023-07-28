@@ -18,7 +18,7 @@
 #include "gridHost.hpp"
 #include "planetarySystem.hpp"
 #include "gravity.hpp"
-#include "forcing/forcing.hpp"
+#include "forcing.hpp"
 #include "stateContainer.hpp"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
