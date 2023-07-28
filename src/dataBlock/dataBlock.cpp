@@ -12,7 +12,7 @@
 #include "dataBlock.hpp"
 #include "fluid.hpp"
 #include "gravity.hpp"
-#include "forcing/forcing.hpp"
+#include "forcing.hpp"
 #include "planetarySystem.hpp"
 #include "vtk.hpp"
 #include "dump.hpp"

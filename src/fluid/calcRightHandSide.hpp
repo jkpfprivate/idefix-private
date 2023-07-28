@@ -11,7 +11,7 @@
 #include "fluid.hpp"
 #include "dataBlock.hpp"
 #include "gravity.hpp"
-#include "forcing/forcing.hpp"
+#include "forcing.hpp"
 
 template<typename Phys, int dir>
 struct Fluid_CorrectFluxFunctor {
