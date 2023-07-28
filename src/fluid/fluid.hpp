@@ -18,6 +18,7 @@
 #include "eos.hpp"
 #include "thermalDiffusion.hpp"
 #include "bragThermalDiffusion.hpp"
+#include "forcing.hpp"
 #include "selfGravity.hpp"
 #include "vtk.hpp"
 #include "dump.hpp"
