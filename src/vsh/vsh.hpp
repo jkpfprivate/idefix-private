@@ -12,16 +12,17 @@
 // Licensed under CeCILL 2.1 License, see COPYING for more information
 // ***********************************************************************************
 
-#ifndef VSH_HPP_
-#define VSH_HPP_
+#ifndef VSH_VSH_HPP_
+#define VSH_VSH_HPP_
 
 #include "idefix.hpp"
-#include "dataBlock.hpp"
 #include "shtns.h"
 
-class VSH {
+class DataBlock;
+
+class Vsh {
   public:
-    VSH(); // Default constructor
+    Vsh(); // Default constructor
 
     int nphi;
     int nphi_proc;
@@ -47,16 +48,16 @@ class VSH {
     IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
     IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
 
-    void InitVSH(DataBlock *, int, int, int, int);
+    void InitVsh(DataBlock *, int, int, int, int);
     void Generatejl();
-    void GenerateCellVSH(int);
-    void GenerateInterfaceVSH(int);
-    void GenerateCellGhostVSH();
-    void GenerateInterfaceGhostVSH();
+    void GenerateCellVsh(int);
+    void GenerateInterfaceVsh(int);
+    void GenerateCellGhostVsh();
+    void GenerateInterfaceGhostVsh();
  
   private:
     void write_vect(std::string, double *, int);
     void write_mx(std::string, double *, int, int);
 };
 
-#endif // VSH_HPP_
+#endif // VSH_VSH_HPP_

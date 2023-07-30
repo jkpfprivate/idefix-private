@@ -13,12 +13,13 @@
 // ***********************************************************************************
 
 #include "vsh.hpp"
+#include "dataBlock.hpp"
 
-VSH::VSH() {
+Vsh::Vsh() {
 // Default constructor
 } 
 
-void VSH::InitVSH(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
+void Vsh::InitVsh(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
   this->nphi = nphi;
   this->nphi_proc = datain->np_int[KDIR];
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
@@ -51,7 +52,7 @@ void VSH::InitVSH(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
   this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
 }
 
-void VSH::Generatejl() {
+void Vsh::Generatejl() {
   for(int l = 0; l < this->lmax; l++) {
     for(int i = 0; i < nr_proc+2*ighost; i++) {
       this->jl(l,i) = std::sph_bessel(l, x1(i));
@@ -60,7 +61,7 @@ void VSH::Generatejl() {
   }
 }
 
-void VSH::GenerateCellVSH(int write) {
+void Vsh::GenerateCellVsh(int write) {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Ylm, *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -140,7 +141,7 @@ void VSH::GenerateCellVSH(int write) {
   shtns_destroy(shtns);
 }
 
-void VSH::GenerateInterfaceVSH(int write) { //defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
+void Vsh::GenerateInterfaceVsh(int write) { //defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -210,7 +211,7 @@ void VSH::GenerateInterfaceVSH(int write) { //defined at the right interface bet
   shtns_destroy(shtns);
 }
 
-void VSH::GenerateCellGhostVSH() {
+void Vsh::GenerateCellGhostVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Ylm, *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -317,7 +318,7 @@ void VSH::GenerateCellGhostVSH() {
   shtns_destroy(shtns);
 }
 
-void VSH::GenerateInterfaceGhostVSH() {
+void Vsh::GenerateInterfaceGhostVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -414,7 +415,7 @@ void VSH::GenerateInterfaceGhostVSH() {
   shtns_destroy(shtns);
 }
 
-void VSH::write_vect(std::string fn, double *vec, int N)
+void Vsh::write_vect(std::string fn, double *vec, int N)
 {
         FILE *fp;
         int i;
@@ -426,7 +427,7 @@ void VSH::write_vect(std::string fn, double *vec, int N)
         fclose(fp);
 }
 
-void VSH::write_mx(std::string fn, double *mx, int N1, int N2)
+void Vsh::write_mx(std::string fn, double *mx, int N1, int N2)
 {
         FILE *fp;
         int i,j;
