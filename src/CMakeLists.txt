@@ -5,11 +5,7 @@ add_subdirectory(output)
 add_subdirectory(rkl)
 add_subdirectory(gravity)
 add_subdirectory(utils)
-if(Idefix_VSH)
-  add_subdirectory(vsh)
-  target_include_directories(idefix PUBLIC $ENV{SHTNS_INC} vsh)
-  target_link_libraries(idefix $ENV{SHTNS_LIB}/libshtns.a -lfftw3)
-endif()
+# NOTE: vsh file are added by the root CMakeLists along with dependencies to the SHTNS library
 
 target_sources(idefix
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/arrays.hpp
