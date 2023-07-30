@@ -18,6 +18,9 @@
 #include "gridHost.hpp"
 #include "planetarySystem.hpp"
 #include "gravity.hpp"
+#if VSH == YES
+  #include "vsh.hpp"
+#endif // VSH == YES
 #include "stateContainer.hpp"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +45,9 @@ class Fluid;
 class SubGrid;
 class Vtk;
 class Dump;
+#if VSH == YES
+  class Vsh;
+#endif // VSH == YES
 
 // Forward class hydro declaration
 #include "physics.hpp"
@@ -161,6 +167,12 @@ class DataBlock {
   // Do we have Gravity ?
   bool haveGravity{false};
   std::unique_ptr<Gravity> gravity;
+
+  // Do we have VSH ?
+  #if VSH == YES
+//    std::unique_ptr<Vsh> vsh;
+    Vsh vsh;
+  #endif // VSH == YES
 
   // User step functions (before or after the main integrator step)
   void LaunchUserStepFirst();     ///< perform user-defined step before main integration step

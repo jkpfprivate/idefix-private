@@ -10,6 +10,9 @@
 #include "dataBlock.hpp"
 #include "fluid.hpp"
 #include "gravity.hpp"
+#if VSH == YES
+  #include "vsh.hpp"
+#endif // VSH == YES
 #include "planetarySystem.hpp"
 #include "vtk.hpp"
 #include "dump.hpp"
@@ -141,6 +144,23 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     this->gravity = std::make_unique<Gravity>(input, this);
     this->haveGravity = true;
   }
+
+  // Initialise vsh if needed
+  #if VSH == YES
+    if(input.CheckBlock("Vsh")) {
+//      this->vsh = std::make_unique<Vsh>();
+      this->vsh = Vsh();
+      int ntheta = input.Get<int>("Grid","X2-grid",2); // number of points in the latitude direction  (constraint: nlat >= lmax+1)
+      int nphi = input.Get<int>("Grid","X3-grid",2);  // number of points in the longitude direction (constraint: nphi >= 2*mmax+1)
+      int lmax = input.Get<int>("Setup","lmax",0);             // maximum degree of spherical harmonics
+      int mmax = input.Get<int>("Setup","mmax",0);             // maximum order of spherical harmonics
+      this->vsh.InitVsh(this, nphi, ntheta, lmax, mmax);
+      this->vsh.GenerateCellVsh(0);
+      this->vsh.GenerateCellGhostVsh();
+      this->vsh.GenerateInterfaceVsh(0);
+      this->vsh.GenerateInterfaceGhostVsh();
+    }
+  #endif // VSH == YES
 
   // Initialise dust grains if needed
   if(input.CheckBlock("Dust")) {
