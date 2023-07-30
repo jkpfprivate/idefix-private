@@ -9,7 +9,6 @@
 
 #include "forcing.hpp"
 #include "dataBlock.hpp"
-#include "dataBlockHost.hpp"
 #include "input.hpp"
 
 Forcing::Forcing(Input &input, DataBlock *datain) {
@@ -18,59 +17,17 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   // Forcing
   #if GEOMETRY == SPHERICAL
-    if(input.CheckEntry("Forcing","lmax")>=0) {
-      this->lmax = input.Get<int>("Forcing","lmax",0);
-    } else {
-      idfx::cout << "No lmax provided. Assuming 2." << std::endl;
-      this->lmax = 2;
-    }
-    if(input.CheckEntry("Forcing","mmax")>=0) {
-      this->mmax = input.Get<int>("Forcing","mmax",0);
-    } else {
-      idfx::cout << "No mmax provided. Assuming 2." << std::endl;
-      this->mmax = 2;
-    }
-    if(input.CheckEntry("Forcing","t_corr")>=0) {
-      this->t_corr = input.Get<real>("Forcing","t_corr",0);
-    } else {
-      idfx::cout << "No correlation time provided. Assuming 1." << std::endl;
-      this->t_corr = 1.;
-    }
-    if(input.CheckEntry("Forcing","frms_Ylm")>=0) {
-      this->frms_Ylm = input.Get<real>("Forcing","frms_Ylm",0);
-    } else {
-      idfx::cout << "No rms forcing for Ylm provided. Assuming 1." << std::endl;
-      this->frms_Ylm = 1.;
-    }
-    if(input.CheckEntry("Forcing","frms_Slm")>=0) {
-      this->frms_Slm = input.Get<real>("Forcing","frms_Slm",0);
-    } else {
-      idfx::cout << "No rms forcing for Slm provided. Assuming 1." << std::endl;
-      this->frms_Slm = 1.;
-    }
-    if(input.CheckEntry("Forcing","frms_Tlm")>=0) {
-      this->frms_Tlm = input.Get<real>("Forcing","frms_Tlm",0);
-    } else {
-      idfx::cout << "No rms forcing for Tlm provided. Assuming 1." << std::endl;
-      this->frms_Tlm = 1.;
-    }
+    this->lmax = input.GetOrSet<int>("Forcing","lmax",0, 3);
+    this->mmax = input.GetOrSet<int>("Forcing","mmax",0, 3);
+    this->t_corr = input.GetOrSet<real>("Forcing","t_corr",0, 1.);
+    this->frms_Ylm = input.GetOrSet<real>("Forcing","frms_Ylm",0, 1.);
+    this->frms_Slm = input.GetOrSet<real>("Forcing","frms_Slm",0, 1.);
+    this->frms_Tlm = input.GetOrSet<real>("Forcing","frms_Tlm",0, 1.);
   #endif // GEOMETRY == SPHERICAL
 
   // Allocate required arrays
   this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                               data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
-
-  int ntheta = input.Get<int>("Grid","X2-grid",2); // number of points in the latitude direction  (constraint: nlat >= lmax+1)
-  int nphi = input.Get<int>("Grid","X3-grid",2);  // number of points in the longitude direction (constraint: nphi >= 2*mmax+1)
-  int nr_proc = data->np_int[IDIR];
-  int ntheta_proc = data->np_int[JDIR];
-  int nphi_proc = data->np_int[KDIR];
-  int koffset = data->gbeg[KDIR] - data->nghost[KDIR];
-  int joffset = data->gbeg[JDIR] - data->nghost[JDIR];
-  DataBlockHost d(*datain, 1);
-  this->vsh = std::make_unique<Vsh>(&d);
-  this->vsh->GenerateCellVsh(0);
-  this->vsh->Generatejl();
 
   this->OUprocesses.InitProcesses(lmax,mmax,0.,t_corr);
 
@@ -84,7 +41,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 void Forcing::ShowConfig() {
   #if GEOMETRY == SPHERICAL
     idfx::cout << "Forcing: ENABLED." << std::endl;
-    idfx::cout << "Forcing: lmax=" << lmax << " and mmax=" << mmax << " ." << std::endl;
+    idfx::cout << "Forcing: lmax=" << lmax << " and mmax=" << mmax << "." << std::endl;
     idfx::cout << "Forcing: t_corr=" << this->t_corr << " ." << std::endl;
     idfx::cout << "Forcing: frms_Ylm=" << frms_Ylm << ", frms_Slm=" << frms_Slm << ", frms_Tlm =" << frms_Tlm << " ." << std::endl;
   #endif // GEOMETRY == SPHERICAL
@@ -122,11 +79,11 @@ void Forcing::ComputeForcing(real dt) {
                     real forcing_MX2=0;
                     real forcing_MX3=0;
                     for (int l=0; l<this->lmax; l++) {
-                      real jli = vsh->jl(l,i);
+                      real jli = this->data->jl(l,i);
                       for (int m=0; m<this->mmax; m++) {
-                        forcing_MX1 += jli*this->vsh->Ylm_r(l,m,k,j)*this->OUprocesses.ouValues(0,l,m);
-                        forcing_MX2 += jli*this->vsh->Slm_th(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_th(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
-                        forcing_MX3 += jli*vsh->Slm_phi(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->vsh->Tlm_phi(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
+                        forcing_MX1 += jli*this->data->Ylm_r(l,m,k,j)*this->OUprocesses.ouValues(0,l,m);
+                        forcing_MX2 += jli*this->data->Slm_th(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->data->Tlm_th(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
+                        forcing_MX3 += jli*data->Slm_phi(l,m,k,j)*this->OUprocesses.ouValues(1,l,m) + jli*this->data->Tlm_phi(l,m,k,j)*this->OUprocesses.ouValues(2,l,m);
                       }
                     }
    
