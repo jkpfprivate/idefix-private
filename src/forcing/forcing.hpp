@@ -10,10 +10,6 @@
 
 #include "idefix.hpp"
 #include "input.hpp"
-
-#if GEOMETRY == SPHERICAL
-  #include "vsh.hpp"
-#endif
 #include "OrnsteinUhlenbeckProcess.hpp"
 
 class DataBlock;
@@ -36,6 +32,10 @@ class Forcing {
 //  // Whether we should skip gravity computation every n steps
 //  int skipGravity{1};
 
+  #if GEOMETRY == SPHERICAL
+    real lmax;
+    real mmax;
+  #endif
 
  private:
 //  friend class PlanetarySystem;
@@ -47,13 +47,6 @@ class Forcing {
   real frms_Slm;
   real frms_Tlm;
   OrnsteinUhlenbeckProcesses OUprocesses;
-
-  #if GEOMETRY == SPHERICAL
-//    Vsh vsh;
-    std::unique_ptr<Vsh> vsh;
-    real lmax;
-    real mmax;
-  #endif
 
 };
 
