@@ -14,16 +14,13 @@
 
 #include "vsh.hpp"
 #include "dataBlock.hpp"
+#include "input.hpp"
 
-Vsh::Vsh() {
-// Default constructor
-} 
-
-void Vsh::InitVsh(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
-  this->nphi = nphi;
+Vsh::Vsh(Input &input, DataBlock *datain) {
+  this->nphi = datain->mygrid->np_int[KDIR];
   this->nphi_proc = datain->np_int[KDIR];
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
-  this->ntheta = ntheta;
+  this->ntheta = datain->mygrid->np_int[JDIR];
   this->ntheta_proc = datain->np_int[JDIR];
   this->ntheta_shtns = 2*ntheta + 1;
   this->nr_proc = datain->np_int[IDIR];
@@ -35,8 +32,8 @@ void Vsh::InitVsh(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
   this->x1 = datain->x[IDIR];
   this->x1l = datain->xl[IDIR];
 
-  this->lmax = lmax;
-  this->mmax = mmax;
+  this->lmax = input.GetOrSet<int>("Vsh","lmax",0, ntheta/2-1);
+  this->mmax = input.GetOrSet<int>("Vsh","mmax",0, ntheta/2-1);
 
   this->jl = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
   this->jls = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
@@ -50,6 +47,11 @@ void Vsh::InitVsh(DataBlock *datain, int nphi, int ntheta, int lmax, int mmax) {
   this->Slm_phis = IdefixArray4D<real> ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+} 
+
+void Vsh::ShowConfig() {
+  idfx::cout << "Vsh: ENABLED." << std::endl;
+  idfx::cout << "Vsh: lmax=" << this->lmax << " and mmax=" << this->mmax << "." << std::endl;
 }
 
 void Vsh::Generatejl() {

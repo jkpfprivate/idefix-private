@@ -16,13 +16,14 @@
 #define VSH_VSH_HPP_
 
 #include "idefix.hpp"
+#include "input.hpp"
 #include "shtns.h"
 
 class DataBlock;
 
 class Vsh {
   public:
-    Vsh(); // Default constructor
+    Vsh(Input&, DataBlock*); // Default constructor
 
     int nphi;
     int nphi_proc;
@@ -48,7 +49,7 @@ class Vsh {
     IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
     IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
 
-    void InitVsh(DataBlock *, int, int, int, int);
+    void ShowConfig();
     void Generatejl();
     void GenerateCellVsh(int);
     void GenerateInterfaceVsh(int);
