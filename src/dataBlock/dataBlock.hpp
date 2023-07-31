@@ -170,8 +170,9 @@ class DataBlock {
 
   // Do we have VSH ?
   #if VSH == YES
-//    std::unique_ptr<Vsh> vsh;
-    Vsh vsh;
+    std::unique_ptr<Vsh> vsh;
+    int lmax;
+    int mmax;
   #endif // VSH == YES
 
   // User step functions (before or after the main integrator step)

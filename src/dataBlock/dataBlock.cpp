@@ -147,19 +147,12 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
 
   // Initialise vsh if needed
   #if VSH == YES
-    if(input.CheckBlock("Vsh")) {
-//      this->vsh = std::make_unique<Vsh>();
-      this->vsh = Vsh();
-      int ntheta = input.Get<int>("Grid","X2-grid",2); // number of points in the latitude direction  (constraint: nlat >= lmax+1)
-      int nphi = input.Get<int>("Grid","X3-grid",2);  // number of points in the longitude direction (constraint: nphi >= 2*mmax+1)
-      int lmax = input.Get<int>("Setup","lmax",0);             // maximum degree of spherical harmonics
-      int mmax = input.Get<int>("Setup","mmax",0);             // maximum order of spherical harmonics
-      this->vsh.InitVsh(this, nphi, ntheta, lmax, mmax);
-      this->vsh.GenerateCellVsh(0);
-      this->vsh.GenerateCellGhostVsh();
-      this->vsh.GenerateInterfaceVsh(0);
-      this->vsh.GenerateInterfaceGhostVsh();
-    }
+    this->vsh = std::make_unique<Vsh>(input, this);
+    this->vsh->Generatejl();
+    this->vsh->GenerateCellVsh(0);
+    this->vsh->GenerateCellGhostVsh();
+    this->vsh->GenerateInterfaceVsh(0);
+    this->vsh->GenerateInterfaceGhostVsh();
   #endif // VSH == YES
 
   // Initialise dust grains if needed
@@ -332,6 +325,9 @@ void DataBlock::ShowConfig() {
   if(haveFargo) fargo->ShowConfig();
   if(haveplanetarySystem) planetarySystem->ShowConfig();
   if(haveGravity) gravity->ShowConfig();
+  #if VSH == YES
+    vsh->ShowConfig();
+  #endif // VSH == YES
   if(haveUserStepFirst) idfx::cout << "DataBlock: User's first step has been enrolled."
                                    << std::endl;
   if(haveUserStepLast) idfx::cout << "DataBlock: User's last step has been enrolled."
