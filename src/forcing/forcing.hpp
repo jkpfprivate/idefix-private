@@ -43,9 +43,9 @@ class Forcing {
   DataBlock *data;
 
   real t_corr;
-  real frms_Ylm;
-  real frms_Slm;
-  real frms_Tlm;
+  real eps_Ylm;
+  real eps_Slm;
+  real eps_Tlm;
   OrnsteinUhlenbeckProcesses OUprocesses;
 
 };

@@ -23,8 +23,6 @@ class OrnsteinUhlenbeckProcess {
 private:
     real mean;
     real tcorr;
-//    real sigma;
-//    real dt;
     real ou;
 
     std::default_random_engine generator;
@@ -32,9 +30,7 @@ private:
 
 public:
     OrnsteinUhlenbeckProcess(); // Default (empty) constructor
-//    InitProcess(int, real, real, real, real);
     void InitProcess(int, real, real);
-//    real getNextValue();
     real GetNextValue(real, real);
 };
 
@@ -45,17 +41,13 @@ private:
 
     real mean;
     real tcorr;
-//    real sigma;
-//    real dt;
 
     std::vector<OrnsteinUhlenbeckProcess> ouProcesses;
 public:
     IdefixArray3D<real> ouValues;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-//    InitProcess(int, real, real, real, real);
     void InitProcesses(int, int, real, real);
-//    real getNextValue();
     void UpdateProcesses(real, real, real, real);
 };
 
