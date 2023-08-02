@@ -20,16 +20,16 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->lmax = input.GetOrSet<int>("Forcing","lmax",0, 3);
     this->mmax = input.GetOrSet<int>("Forcing","mmax",0, 3);
     this->t_corr = input.GetOrSet<real>("Forcing","t_corr",0, 1.);
-    this->frms_Ylm = input.GetOrSet<real>("Forcing","frms_Ylm",0, 1.);
-    this->frms_Slm = input.GetOrSet<real>("Forcing","frms_Slm",0, 1.);
-    this->frms_Tlm = input.GetOrSet<real>("Forcing","frms_Tlm",0, 1.);
+    this->eps_Ylm = input.GetOrSet<real>("Forcing","eps_Ylm",0, 1.);
+    this->eps_Slm = input.GetOrSet<real>("Forcing","eps_Slm",0, 1.);
+    this->eps_Tlm = input.GetOrSet<real>("Forcing","eps_Tlm",0, 1.);
+
+    // Allocate required arrays
+    this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
+                                data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  
+    this->OUprocesses.InitProcesses(this->lmax,this->mmax,0.,t_corr);
   #endif // GEOMETRY == SPHERICAL
-
-  // Allocate required arrays
-  this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
-
-  this->OUprocesses.InitProcesses(lmax,mmax,0.,t_corr);
 
 //  this->skipGravity = input.GetOrSet<int>("Gravity","skip",0,1);
 //  if(skipGravity<1) {
@@ -43,7 +43,7 @@ void Forcing::ShowConfig() {
     idfx::cout << "Forcing: ENABLED." << std::endl;
     idfx::cout << "Forcing: lmax=" << lmax << " and mmax=" << mmax << "." << std::endl;
     idfx::cout << "Forcing: t_corr=" << this->t_corr << " ." << std::endl;
-    idfx::cout << "Forcing: frms_Ylm=" << frms_Ylm << ", frms_Slm=" << frms_Slm << ", frms_Tlm =" << frms_Tlm << " ." << std::endl;
+    idfx::cout << "Forcing: eps_Ylm=" << eps_Ylm << ", eps_Slm=" << eps_Slm << ", eps_Tlm =" << eps_Tlm << " ." << std::endl;
   #endif // GEOMETRY == SPHERICAL
 //    if(skipGravity>1) {
 //      idfx::cout << "Gravity: gravity field will be updated every " << skipGravity
@@ -94,7 +94,7 @@ void Forcing::ComputeForcing(real dt) {
     });
   #endif // GEOMETRY == SPHERICAL
 
-  OUprocesses.UpdateProcesses(dt, frms_Ylm, frms_Slm, frms_Tlm);
+  OUprocesses.UpdateProcesses(dt, eps_Ylm, eps_Slm, eps_Tlm);
   idfx::popRegion();
 }
 

@@ -18,7 +18,6 @@ OrnsteinUhlenbeckProcess::OrnsteinUhlenbeckProcess()
 { // Default (empty) constructor
 }
 
-//void OrnsteinUhlenbeckProcess::InitProcess(int seed, real mean, real tcorr, real sigma, real dt) {
 void OrnsteinUhlenbeckProcess::InitProcess(int seed, real mean, real tcorr) {
   this->mean = mean;
   this->tcorr = tcorr;
@@ -27,12 +26,11 @@ void OrnsteinUhlenbeckProcess::InitProcess(int seed, real mean, real tcorr) {
   this->normal_distribution = std::normal_distribution(0.,1.);
 }
 
-//real OrnsteinUhlenbeckProcess::GetNextValue() {
-real OrnsteinUhlenbeckProcess::GetNextValue(real dt, real sigma) {
+real OrnsteinUhlenbeckProcess::GetNextValue(real dt, real epsilon) {
   real normal = this->normal_distribution(this->generator);
   real expTerm = std::exp(-dt/this->tcorr);
-  real dou = sigma*std::sqrt((1 - expTerm*expTerm)*this->tcorr/2.)*normal;
-  ou = ou*expTerm + dou;
+  real dou = std::sqrt(epsilon/this->tcorr*(1 - expTerm*expTerm))*normal;
+  ou = this->mean + (ou-this->mean)*expTerm + dou;
   return ou;
 }
 
@@ -40,7 +38,6 @@ OrnsteinUhlenbeckProcesses::OrnsteinUhlenbeckProcesses()
 { // Default (empty) constructor
 }
 
-//void OrnsteinUhlenbeckProcess::InitProcess(int seed, real mean, real tcorr, real sigma, real dt) {
 void OrnsteinUhlenbeckProcesses::InitProcesses(int lmax, int mmax, real mean, real tcorr) {
   this->lmax = lmax;
   this->mmax = mmax;
