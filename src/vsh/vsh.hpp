@@ -42,8 +42,10 @@ class Vsh {
     int ighost;
     int lmax;
     int mmax;
-    IdefixArray1D<real> x1; // spherical bessel function
-    IdefixArray1D<real> x1l; // spherical bessel function
+//    IdefixArray1D<real> x1; // spherical bessel function
+//    IdefixArray1D<real> x1l; // spherical bessel function
+    IdefixArray1D<real>::HostMirror x1; // spherical bessel function
+    IdefixArray1D<real>::HostMirror x1l; // spherical bessel function
 
     IdefixArray2D<real> jl; // spherical bessel function
     IdefixArray2D<real> jls; // spherical bessel function at interface

@@ -76,7 +76,6 @@ void Vsh::GenerateCellVsh(int write) {
   real *Yr;                // real space : r
   real *Stheta, *Sphi;                // real space : theta,phi
   real *Ttheta, *Tphi;                // real space : theta,phi
-  real t;
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -155,7 +154,6 @@ void Vsh::GenerateInterfaceVsh(int write) { //defined at the right interface bet
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
   real *Stheta, *Sphi;                // real space : theta,phi
   real *Ttheta, *Tphi;                // real space : theta,phi
-  real t;
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -226,7 +224,6 @@ void Vsh::GenerateCellGhostVsh() {
   real *Yr;                // real space : r
   real *Stheta, *Sphi;                // real space : theta,phi
   real *Ttheta, *Tphi;                // real space : theta,phi
-  real t;
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -332,7 +329,6 @@ void Vsh::GenerateInterfaceGhostVsh() {
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
   real *Stheta, *Sphi;                // real space : theta,phi
   real *Ttheta, *Tphi;                // real space : theta,phi
-  real t;
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
