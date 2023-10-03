@@ -12,6 +12,9 @@
 
 #include "idefix.hpp"
 #include "dataBlock.hpp"
+#if VSH == YES
+  #include "vsh.hpp"
+#endif // VSH == YES
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// The DataBlockHost class is designed to store most of the information coming from an associated
@@ -48,8 +51,26 @@ class DataBlockHost {
   IdefixHostArray3D<real> Ex3;    ///< x3 electric field
 
   #endif
-  IdefixHostArray4D<real> Uc;     ///< Main cell-centered conservative variables
-  IdefixHostArray3D<real> InvDt;  ///< Inverse of maximum timestep in each cell
+
+  // Do we have VSH ?
+  #if VSH == YES
+    std::unique_ptr<Vsh> vsh;
+//    IdefixArray2D<real>::HostMirror jl; // spherical bessel function
+//    IdefixArray2D<real>::HostMirror jls; // spherical bessel function at interface
+//    // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
+//    IdefixArray4D<real>::HostMirror Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
+//    IdefixArray4D<real>::HostMirror Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
+    int nth_tot, nphi_tot;
+    int lmax, mmax;
+    IdefixArray2D<real> jl; // spherical bessel function
+    IdefixArray2D<real> jls; // spherical bessel function at interface
+    // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
+    IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
+    IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
+  #endif // VSH == YES
+
+  IdefixArray4D<real>::HostMirror Uc;     ///< Main cell-centered conservative variables
+  IdefixArray3D<real>::HostMirror InvDt;  ///< Inverse of maximum timestep in each cell
 
   std::array<IdefixHostArray2D<int>,3> coarseningLevel; ///< Grid coarsening level
                                                      ///< (only defined when coarsening
