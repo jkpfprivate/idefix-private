@@ -55,18 +55,32 @@ class DataBlockHost {
   // Do we have VSH ?
   #if VSH == YES
     std::unique_ptr<Vsh> vsh;
+    int nth_tot, nphi_tot;
+    int lmax, mmax;
 //    IdefixArray2D<real>::HostMirror jl; // spherical bessel function
 //    IdefixArray2D<real>::HostMirror jls; // spherical bessel function at interface
 //    // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
-//    IdefixArray4D<real>::HostMirror Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
-//    IdefixArray4D<real>::HostMirror Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
-    int nth_tot, nphi_tot;
-    int lmax, mmax;
+//    IdefixArray4D<real>::HostMirror Ylm_r;
+//    IdefixArray4D<real>::HostMirror Slm_th;
+//    IdefixArray4D<real>::HostMirror Slm_phi;
+//    IdefixArray4D<real>::HostMirror Tlm_th;
+//    IdefixArray4D<real>::HostMirror Tlm_phi;
+//    IdefixArray4D<real>::HostMirror Slm_ths;
+//    IdefixArray4D<real>::HostMirror Slm_phis;
+//    IdefixArray4D<real>::HostMirror Tlm_ths;
+//    IdefixArray4D<real>::HostMirror Tlm_phis;
     IdefixArray2D<real> jl; // spherical bessel function
     IdefixArray2D<real> jls; // spherical bessel function at interface
     // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
-    IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
-    IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
+    IdefixArray4D<real> Ylm_r;
+    IdefixArray4D<real> Slm_th;
+    IdefixArray4D<real> Slm_phi;
+    IdefixArray4D<real> Tlm_th;
+    IdefixArray4D<real> Tlm_phi;
+    IdefixArray4D<real> Slm_ths;
+    IdefixArray4D<real> Slm_phis;
+    IdefixArray4D<real> Tlm_ths;
+    IdefixArray4D<real> Tlm_phis;
   #endif // VSH == YES
 
   IdefixArray4D<real>::HostMirror Uc;     ///< Main cell-centered conservative variables
