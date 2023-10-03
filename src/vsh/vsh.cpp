@@ -41,18 +41,18 @@ Vsh::Vsh(DataBlockHost *datain) {
   this->lmax = datain->lmax;
   this->mmax = datain->mmax;
 
-  this->jl = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
-  this->jls = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
-  this->Ylm_r = IdefixArray4D<real> ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_th = IdefixArray4D<real> ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_phi = IdefixArray4D<real> ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_th = IdefixArray4D<real> ("Tlm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_phi = IdefixArray4D<real> ("Tlm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->jl = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
+  this->jls = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
+  this->Ylm_r = IdefixArray4D<real>::HostMirror ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_th = IdefixArray4D<real>::HostMirror ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_phi = IdefixArray4D<real>::HostMirror ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_th = IdefixArray4D<real>::HostMirror ("Tlm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_phi = IdefixArray4D<real>::HostMirror ("Tlm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
 
-  this->Slm_ths = IdefixArray4D<real> ("Slm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_phis = IdefixArray4D<real> ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_ths = IdefixArray4D<real>::HostMirror ("Slm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_phis = IdefixArray4D<real>::HostMirror ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_ths = IdefixArray4D<real>::HostMirror ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_phis = IdefixArray4D<real>::HostMirror ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
 } 
 
 void Vsh::ShowConfig() {
