@@ -63,6 +63,33 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
             Ex1 = Kokkos::create_mirror_view(data->hydro->emf->ex);
             Ex2 = Kokkos::create_mirror_view(data->hydro->emf->ey);  )
 #endif
+
+  // Initialise vsh if needed
+  #if VSH == YES
+//    vsh = std::make_unique<Vsh>(input, this);
+//    vsh = std::make_unique<Vsh>(lmax, mmax, this);
+    lmax = data->lmax;
+    mmax = data->mmax;
+    nth_tot = data->nth_tot;
+    nphi_tot = data->nphi_tot;
+    vsh = std::make_unique<Vsh>(this);
+    vsh->Generatejl();
+    vsh->GenerateCellVsh(0);
+    vsh->GenerateCellGhostVsh();
+    vsh->GenerateInterfaceVsh(0);
+    vsh->GenerateInterfaceGhostVsh();
+
+    Ylm_r = vsh->Ylm_r;
+    Slm_th = vsh->Slm_th;
+    Slm_phi = vsh->Slm_phi;
+    Tlm_th = vsh->Tlm_th;
+    Tlm_phi = vsh->Tlm_phi;
+    Slm_ths = vsh->Slm_ths;
+    Slm_phis = vsh->Slm_phis;
+    Tlm_ths = vsh->Tlm_ths;
+    Tlm_phis = vsh->Tlm_phis;
+  #endif // VSH == YES
+
   if(haveDust) {
     dustVc = std::vector<IdefixHostArray4D<real>>(data->dust.size());
     for(int i = 0 ; i < data->dust.size() ; i++) {
@@ -116,6 +143,19 @@ void DataBlockHost::SyncToDevice() {
             Kokkos::deep_copy(data->hydro->emf->ex,Ex1);
             Kokkos::deep_copy(data->hydro->emf->ey,Ex2);  )
 #endif
+
+  // Communicate VSH is needed
+  #if VSH == YES
+    Kokkos::deep_copy(data->Ylm_r,Ylm_r);
+    Kokkos::deep_copy(data->Slm_th,Slm_th);
+    Kokkos::deep_copy(data->Slm_phi,Slm_phi);
+    Kokkos::deep_copy(data->Tlm_th,Tlm_th);
+    Kokkos::deep_copy(data->Tlm_phi,Tlm_phi);
+    Kokkos::deep_copy(data->Slm_ths,Slm_ths);
+    Kokkos::deep_copy(data->Slm_phis,Slm_phis);
+    Kokkos::deep_copy(data->Tlm_ths,Tlm_ths);
+    Kokkos::deep_copy(data->Tlm_phis,Tlm_phis);
+  #endif // VSH == YES
   if(haveDust) {
     for(int i = 0 ; i < dustVc.size() ; i++) {
       Kokkos::deep_copy(data->dust[i]->Vc, dustVc[i]);

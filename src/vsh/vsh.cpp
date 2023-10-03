@@ -13,14 +13,18 @@
 // ***********************************************************************************
 
 #include "vsh.hpp"
-#include "dataBlock.hpp"
-#include "input.hpp"
+#include "dataBlockHost.hpp"
+//#include "input.hpp"
 
-Vsh::Vsh(Input &input, DataBlock *datain) {
-  this->nphi = datain->mygrid->np_int[KDIR];
+//Vsh::Vsh(Input &input, DataBlockHost *datain) {
+//Vsh::Vsh(int lmax, int mmax, DataBlockHost *datain) {
+Vsh::Vsh(DataBlockHost *datain) {
+//  this->nphi = datain->mygrid->np_int[KDIR];
+  this->nphi = datain->nphi_tot;
   this->nphi_proc = datain->np_int[KDIR];
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
-  this->ntheta = datain->mygrid->np_int[JDIR];
+//  this->ntheta = datain->mygrid->np_int[JDIR];
+  this->ntheta = datain->nth_tot;
   this->ntheta_proc = datain->np_int[JDIR];
   this->ntheta_shtns = 2*ntheta + 1;
   this->nr_proc = datain->np_int[IDIR];
@@ -32,8 +36,10 @@ Vsh::Vsh(Input &input, DataBlock *datain) {
   this->x1 = datain->x[IDIR];
   this->x1l = datain->xl[IDIR];
 
-  this->lmax = input.GetOrSet<int>("Vsh","lmax",0, ntheta/2-1);
-  this->mmax = input.GetOrSet<int>("Vsh","mmax",0, ntheta/2-1);
+//  this->lmax = input.GetOrSet<int>("Vsh","lmax",0, ntheta/2-1);
+//  this->mmax = input.GetOrSet<int>("Vsh","mmax",0, ntheta/2-1);
+  this->lmax = datain->lmax;
+  this->mmax = datain->mmax;
 
   this->jl = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);
   this->jls = IdefixArray2D<real> ("jl", lmax, nr_proc+2*ighost);

@@ -18,9 +18,6 @@
 #include "gridHost.hpp"
 #include "planetarySystem.hpp"
 #include "gravity.hpp"
-#if VSH == YES
-  #include "vsh.hpp"
-#endif // VSH == YES
 #include "stateContainer.hpp"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +167,13 @@ class DataBlock {
 
   // Do we have VSH ?
   #if VSH == YES
-    std::unique_ptr<Vsh> vsh;
+    int nth_tot, nphi_tot;
+    int lmax, mmax;
+    IdefixArray2D<real> jl; // spherical bessel function
+    IdefixArray2D<real> jls; // spherical bessel function at interface
+    // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
+    IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
+    IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
   #endif // VSH == YES
 
   // User step functions (before or after the main integrator step)

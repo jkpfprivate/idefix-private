@@ -10,9 +10,6 @@
 #include "dataBlock.hpp"
 #include "fluid.hpp"
 #include "gravity.hpp"
-#if VSH == YES
-  #include "vsh.hpp"
-#endif // VSH == YES
 #include "planetarySystem.hpp"
 #include "vtk.hpp"
 #include "dump.hpp"
@@ -145,14 +142,25 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     this->haveGravity = true;
   }
 
-  // Initialise vsh if needed
+  // Do we have VSH ?
   #if VSH == YES
-    this->vsh = std::make_unique<Vsh>(input, this);
-    this->vsh->Generatejl();
-    this->vsh->GenerateCellVsh(0);
-    this->vsh->GenerateCellGhostVsh();
-    this->vsh->GenerateInterfaceVsh(0);
-    this->vsh->GenerateInterfaceGhostVsh();
+    nth_tot = input.Get<int>("Grid","X2-grid",2);
+    nphi_tot = input.Get<int>("Grid","X3-grid",2);
+    lmax = input.GetOrSet<int>("Vsh","lmax",0, 3);
+    mmax = input.GetOrSet<int>("Vsh","mmax",0, 3);
+    
+    // Allocate required arrays
+    this->jl = IdefixArray2D<real>("jl", lmax, this->np_tot[IDIR]);
+    this->jls = IdefixArray2D<real>("jls", lmax, this->np_tot[IDIR]);
+    this->Ylm_r = IdefixArray4D<real> ("Ylm_r", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_th = IdefixArray4D<real> ("Slm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_phi = IdefixArray4D<real> ("Slm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_th = IdefixArray4D<real> ("Tlm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_phi = IdefixArray4D<real> ("Tlm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_ths = IdefixArray4D<real> ("Slm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_phis = IdefixArray4D<real> ("Slm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
   #endif // VSH == YES
 
   // Initialise dust grains if needed
@@ -325,9 +333,9 @@ void DataBlock::ShowConfig() {
   if(haveFargo) fargo->ShowConfig();
   if(haveplanetarySystem) planetarySystem->ShowConfig();
   if(haveGravity) gravity->ShowConfig();
-  #if VSH == YES
-    vsh->ShowConfig();
-  #endif // VSH == YES
+//  #if VSH == YES
+//    vsh->ShowConfig();
+//  #endif // VSH == YES
   if(haveUserStepFirst) idfx::cout << "DataBlock: User's first step has been enrolled."
                                    << std::endl;
   if(haveUserStepLast) idfx::cout << "DataBlock: User's last step has been enrolled."

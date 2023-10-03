@@ -16,14 +16,16 @@
 #define VSH_VSH_HPP_
 
 #include "idefix.hpp"
-#include "input.hpp"
+//#include "input.hpp"
 #include "shtns.h"
 
-class DataBlock;
+class DataBlockHost;
 
 class Vsh {
   public:
-    Vsh(Input&, DataBlock*); // Default constructor
+//    Vsh(Input&, DataBlockHost*); // Default constructor
+//    Vsh(int, int, DataBlockHost*); 
+    Vsh(DataBlockHost*); 
 
     int nphi;
     int nphi_proc;
