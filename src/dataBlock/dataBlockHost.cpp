@@ -94,6 +94,8 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
     vsh->GenerateInterfaceVsh();
     vsh->GenerateInterfaceGhostVsh();
 
+    jl = vsh->jl;
+    jls = vsh->jls;
     Ylm_r = vsh->Ylm_r;
     Slm_th = vsh->Slm_th;
     Slm_phi = vsh->Slm_phi;
@@ -166,6 +168,10 @@ void DataBlockHost::SyncToDevice() {
 
 #if VSH == YES
   if (hasVsh) {
+  // Communicate VSH is needed
+  #if VSH == YES
+    Kokkos::deep_copy(data->jl,jl);
+    Kokkos::deep_copy(data->jls,jls);
     Kokkos::deep_copy(data->Ylm_r,Ylm_r);
     Kokkos::deep_copy(data->Slm_th,Slm_th);
     Kokkos::deep_copy(data->Slm_phi,Slm_phi);
