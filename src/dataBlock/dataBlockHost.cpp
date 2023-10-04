@@ -167,7 +167,6 @@ void DataBlockHost::SyncToDevice() {
 #if VSH == YES
   if (hasVsh) {
   // Communicate VSH is needed
-  #if VSH == YES
     Kokkos::deep_copy(data->jl,jl);
     Kokkos::deep_copy(data->jls,jls);
     Kokkos::deep_copy(data->Ylm_r,Ylm_r);
