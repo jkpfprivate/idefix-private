@@ -16,39 +16,33 @@
 #define ORNSTEIN_UHLENBECK_PROCESS_HPP
 
 #include <iostream>
-#include <random>
+//#include <random>
+//#include <Kokkos_Core.hpp>
+#include <Kokkos_Random.hpp>
 #include "idefix.hpp"
 
-class OrnsteinUhlenbeckProcess {
-private:
-    real mean;
-    real tcorr;
-    real ou;
-
-    std::default_random_engine generator;
-    std::normal_distribution<real> normal_distribution;
-
-public:
-    OrnsteinUhlenbeckProcess(); // Default (empty) constructor
-    void InitProcess(int, real, real);
-    real GetNextValue(real, real);
-};
 
 class OrnsteinUhlenbeckProcesses {
 private:
     int lmax;
     int mmax;
 
-    real mean;
-    real tcorr;
+    IdefixArray3D<real> means;
+    IdefixArray3D<real> tcorrs;
+    IdefixArray3D<real> epsilons;
 
-    std::vector<OrnsteinUhlenbeckProcess> ouProcesses;
+//    std::default_random_engine generator;
+//    std::normal_distribution<real> normal_distribution;
+    Kokkos::Random_XorShift64_Pool<> random_pool;
+
 public:
     IdefixArray3D<real> ouValues;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-    void InitProcesses(int, int, real, real);
-    void UpdateProcesses(real, real, real, real);
+//    void InitProcesses(int, int, real, real);
+    void InitProcesses(int, int, real, real, real, real, real);
+//    void UpdateProcessesValues(real, IdefixArray1D<real>);
+    void UpdateProcessesValues(real);
 };
 
 #endif  // ORNSTEIN_UHLENBECK_PROCESS_HPP

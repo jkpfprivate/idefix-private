@@ -28,7 +28,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                                 data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   
-    this->OUprocesses.InitProcesses(this->lmax,this->mmax,0.,t_corr);
+    this->OUprocesses.InitProcesses(this->lmax,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
   #endif // GEOMETRY == SPHERICAL
 
 //  this->skipGravity = input.GetOrSet<int>("Gravity","skip",0,1);
@@ -81,15 +81,12 @@ void Forcing::ComputeForcing(real dt) {
     IdefixArray3D<real> OuValues = this->OUprocesses.ouValues;
     idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
                 KOKKOS_LAMBDA (int k, int j, int i) {
-//    idefix_for("ComputeForcingThetaPhi", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR],
-//                KOKKOS_LAMBDA (int k, int j) {
-//      idefix_for("ComputeForcingR", 0, data->np_tot[IDIR],
-//                  KOKKOS_LAMBDA (int i) {
                     real forcing_MX1=0;
                     real forcing_MX2=0;
                     real forcing_MX3=0;
                     for (int l=0; l<lmax; l++) {
-                      real jli = jl(l,i);
+//                      real jli = jl(l,i);
+                      real jli = 1.;
                       for (int m=0; m<mmax; m++) {
                         forcing_MX1 += jli*Ylm_r(l,m,k,j)*OuValues(0,l,m);
                         forcing_MX2 += jli*Slm_th(l,m,k,j)*OuValues(1,l,m) + jli*Tlm_th(l,m,k,j)*OuValues(2,l,m);
@@ -100,11 +97,11 @@ void Forcing::ComputeForcing(real dt) {
                     forcingTerm(IDIR,k,j,i) += forcing_MX1;
                     forcingTerm(JDIR,k,j,i) += forcing_MX2;
                     forcingTerm(KDIR,k,j,i) += forcing_MX3;
-//      });
     });
   #endif // GEOMETRY == SPHERICAL
 
-  OUprocesses.UpdateProcesses(dt, eps_Ylm, eps_Slm, eps_Tlm);
+  OUprocesses.UpdateProcessesValues(dt);
+//  OUprocesses.UpdateProcessesValues(dt, eps_Ylm, eps_Slm, eps_Tlm);
   idfx::popRegion();
 }
 
