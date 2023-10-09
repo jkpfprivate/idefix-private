@@ -62,6 +62,7 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
       if (m < l+1) {
         auto generator = random_pool.get_state();
         real normal = generator.normal(0., 1.);
+        printf("%f;", normal);
         random_pool.free_state(generator);
         real expTerm = std::exp(-dt/tcorrs(vshcomp,l,m));
         real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
