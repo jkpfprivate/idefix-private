@@ -18,8 +18,10 @@ OrnsteinUhlenbeckProcesses::OrnsteinUhlenbeckProcesses()
 { // Default (empty) constructor
 }
 
-void OrnsteinUhlenbeckProcesses::InitProcesses(int lmax, int mmax, real mean, real tcorr, real eps_Ylm, real eps_Slm, real eps_Tlm) {
+void OrnsteinUhlenbeckProcesses::InitProcesses(int lmin, int lmax, int mmin, int mmax, real mean, real tcorr, real eps_Ylm, real eps_Slm, real eps_Tlm) {
+  this->lmin = lmin;
   this->lmax = lmax;
+  this->mmin = mmin;
   this->mmax = mmax;
   this->epsilons = IdefixArray3D<real> ("ouEpsilons", 3,lmax,mmax);
   this->tcorrs = IdefixArray3D<real> ("ouTcorrs", 3,lmax,mmax);
