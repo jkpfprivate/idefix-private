@@ -68,9 +68,14 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
         real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
         real newValue = means(vshcomp,l,m) + (ouValues(vshcomp,l,m)-means(vshcomp,l,m))*expTerm + dou;
         ouValues(vshcomp,l,m) = newValue;
-   if (vshcomp==0 && l==0 && m==0) {
-   printf("%f;", newValue);
-   }
+  std::string ouFile = "checkFiles/ou_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
+  myfile.open (ouFile, std::fstream::app);
+  myfile << newValue << ";";
+  myfile.close();
+  std::string normalFile = "checkFiles/normal_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
+  myfile.open (normalFile, std::fstream::app);
+  myfile << newValue << " ";
+  myfile.close();
       } else {
         ouValues(vshcomp,l,m) = 0.;
       }

@@ -20,6 +20,9 @@
 //#include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include "idefix.hpp"
+#include <iostream>
+#include <fstream>
+//#include <ofstream>
 
 
 class OrnsteinUhlenbeckProcesses {
@@ -43,6 +46,8 @@ public:
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
     void InitProcesses(int, int, int, int, int, real, real, real, real, real);
     void UpdateProcessesValues(real);
+
+    std::ofstream myfile;
 };
 
 #endif  // ORNSTEIN_UHLENBECK_PROCESS_HPP
