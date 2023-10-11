@@ -33,6 +33,8 @@ class Forcing {
 //  int skipGravity{1};
 
   #if GEOMETRY == SPHERICAL
+    real lmin;
+    real mmin;
     real lmax;
     real mmax;
   #endif

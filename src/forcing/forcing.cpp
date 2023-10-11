@@ -17,8 +17,16 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   // Forcing
   #if GEOMETRY == SPHERICAL
+    this->lmin = input.GetOrSet<int>("Forcing","lmin",0, 0);
+    this->mmin = input.GetOrSet<int>("Forcing","mmin",0, 0);
     this->lmax = input.GetOrSet<int>("Forcing","lmax",0, 3);
     this->mmax = input.GetOrSet<int>("Forcing","mmax",0, 3);
+    if (mmax > lmax) {
+      IDEFIX_ERROR("mmax cannot be greater than lmax");
+    }
+    if (mmin > lmin) {
+      IDEFIX_ERROR("mmin cannot be greater than lmin");
+    }
     this->t_corr = input.GetOrSet<real>("Forcing","t_corr",0, 1.);
     this->eps_Ylm = input.GetOrSet<real>("Forcing","eps_Ylm",0, 1.);
     this->eps_Slm = input.GetOrSet<real>("Forcing","eps_Slm",0, 1.);
@@ -28,7 +36,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                                 data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   
-    this->OUprocesses.InitProcesses(this->lmax,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
+    this->OUprocesses.InitProcesses(this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
   #endif // GEOMETRY == SPHERICAL
 
 //  this->skipGravity = input.GetOrSet<int>("Gravity","skip",0,1);
@@ -41,7 +49,8 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 void Forcing::ShowConfig() {
   #if GEOMETRY == SPHERICAL
     idfx::cout << "Forcing: ENABLED." << std::endl;
-    idfx::cout << "Forcing: lmax=" << lmax << " and mmax=" << mmax << "." << std::endl;
+    idfx::cout << "Forcing: lmin=" << lmin << " and lmax=" << lmax << "." << std::endl;
+    idfx::cout << "Forcing: mmin=" << mmin << " and mmax=" << mmax << "." << std::endl;
     idfx::cout << "Forcing: t_corr=" << this->t_corr << " ." << std::endl;
     idfx::cout << "Forcing: eps_Ylm=" << eps_Ylm << ", eps_Slm=" << eps_Slm << ", eps_Tlm =" << eps_Tlm << " ." << std::endl;
   #endif // GEOMETRY == SPHERICAL
@@ -69,7 +78,9 @@ void Forcing::ComputeForcing(real dt) {
     IDEFIX_ERROR("Forcing in CYLINDRICAL geometry not implemented");
   #endif // GEOMETRY == CYLINDRICAL
   #if GEOMETRY == SPHERICAL
+    int lmin = this->lmin;
     int lmax = this->lmax;
+    int mmin = this->mmin;
     int mmax = this->mmax;
     IdefixArray2D<real> jl = this->data->jl;
     IdefixArray4D<real> Ylm_r = this->data->Ylm_r;
@@ -84,10 +95,10 @@ void Forcing::ComputeForcing(real dt) {
                     real forcing_MX1=0;
                     real forcing_MX2=0;
                     real forcing_MX3=0;
-                    for (int l=0; l<lmax; l++) {
+                    for (int l=lmin; l<lmax; l++) {
 //                      real jli = jl(l,i);
                       real jli = 1.;
-                      for (int m=0; m<mmax; m++) {
+                      for (int m=mmin; m<mmax; m++) {
                         forcing_MX1 += jli*Ylm_r(l,m,k,j)*OuValues(0,l,m);
                         forcing_MX2 += jli*Slm_th(l,m,k,j)*OuValues(1,l,m) + jli*Tlm_th(l,m,k,j)*OuValues(2,l,m);
                         forcing_MX3 += jli*Slm_phi(l,m,k,j)*OuValues(1,l,m) + jli*Tlm_phi(l,m,k,j)*OuValues(2,l,m);
