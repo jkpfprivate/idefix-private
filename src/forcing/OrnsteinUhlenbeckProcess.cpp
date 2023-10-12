@@ -74,7 +74,7 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   myfile.close();
   std::string normalFile = "checkFiles/normal_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
   myfile.open (normalFile, std::fstream::app);
-  myfile << newValue << " ";
+  myfile << normal << ";";
   myfile.close();
       } else {
         ouValues(vshcomp,l,m) = 0.;
