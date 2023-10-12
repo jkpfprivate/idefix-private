@@ -359,6 +359,10 @@ void TimeIntegrator::Cycle(DataBlock &data) {
   }
 #endif
 
+  if(data.haveForcing) {
+    data.EvolveForcing(data.t, data.dt);
+  }
+
   if(haveRKL && (ncycles%2)==0) {    // Runge-Kutta-Legendre cycle
     data.EvolveRKLStage();
   }

@@ -33,7 +33,7 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(int lmin, int lmax, int mmin, int
   IdefixArray3D<real> tcorrs = this->tcorrs;
   IdefixArray3D<real> epsilons = this->epsilons;
   IdefixArray3D<real> ouValues = this->ouValues;
-  idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
+  idefix_for("InitProcesses", 0, 3, 0, lmax, 0, mmax,
               KOKKOS_LAMBDA (int vshcomp, int l, int m) {
 //        int seed = pow(2,l)*(2*m+1);
 //        this->generator = std::default_random_engine(seed);

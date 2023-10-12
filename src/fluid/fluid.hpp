@@ -67,6 +67,7 @@ class Fluid {
   real CheckDivB();
   void EvolveStage(const real, const real);
   void ResetStage();
+  void EvolveForcing(const real, const real);
   void ShowConfig();
   IdefixArray4D<real> GetFlux() {return this->FluxRiemann;}
   int CheckNan();
@@ -247,6 +248,10 @@ class Fluid {
   // Loop on dimensions
   template <int dir>
   void LoopDir(const real, const real);
+
+  // Loop on dimensions for forcing
+  template <int dir>
+  void LoopForcingDir(const real, const real);
 };
 
 #include "physics.hpp"

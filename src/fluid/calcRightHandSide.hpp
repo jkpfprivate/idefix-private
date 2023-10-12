@@ -11,7 +11,6 @@
 #include "fluid.hpp"
 #include "dataBlock.hpp"
 #include "gravity.hpp"
-#include "forcing.hpp"
 
 template<typename Phys, int dir>
 struct Fluid_CorrectFluxFunctor {
@@ -215,6 +214,7 @@ struct Fluid_CalcRHSFunctor {
     sinx2m   = hydro->data->sinx2m;
     sinx2 = hydro->data->sinx2;
     dx   = hydro->data->dx[dir];
+
     dx2  = hydro->data->dx[JDIR];
     invDt = hydro->InvDt;
     cMax = hydro->cMax;
@@ -235,12 +235,6 @@ struct Fluid_CalcRHSFunctor {
       // BodyForce
       bodyForce = hydro->data->gravity->bodyForceVector;
       needBodyForce = hydro->data->gravity->haveBodyForce;
-    }
-
-    if(hydro->data->haveForcing) {
-      hydro->data->forcing->ComputeForcing(dt);
-      forcingTerm = hydro->data->forcing->forcingTerm;
-      haveForcingTerm = hydro->data->haveForcing;
     }
 
     // parabolic terms
@@ -301,10 +295,6 @@ struct Fluid_CalcRHSFunctor {
   // Gravitational potential
   IdefixArray3D<real> phiP;
   bool needPotential{false};
-
-  // Forcing term
-  IdefixArray4D<real> forcingTerm;
-  bool haveForcingTerm{false};
 
   // BodyForce
   IdefixArray4D<real> bodyForce;
@@ -510,40 +500,6 @@ struct Fluid_CalcRHSFunctor {
         }
       #endif
     }
-
-    // Forcing
-    if(haveForcingTerm) {
-//std::cout << forcingTerm(1, 12,12,12) << std::endl;
-      rhs[MX1+dir] += dt * Vc(RHO,k,j,i) * forcingTerm(dir,k,j,i);
-      if constexpr(Phys::pressure) {
-        //  rho * v . f, where rhov is taken as a  volume average of Flux(RHO)
-        rhs[ENG] += HALF_F * dtdV * dl *
-                      (Flux(RHO,k,j,i) + Flux(RHO, k+koffset, j+joffset, i+ioffset)) *
-                        forcingTerm(dir,k,j,i);
-      } // Pressure
-
-      // Particular cases if we do not sweep all of the components
-      #if DIMENSIONS == 1 && COMPONENTS > 1
-        EXPAND(                                                           ,
-                  rhs[MX2] += dt * Vc(RHO,k,j,i) * forcingTerm(JDIR,k,j,i);   ,
-                  rhs[MX3] += dt * Vc(RHO,k,j,i) * forcingTerm(KDIR,k,j,i);    )
-        if constexpr(Phys::pressure) {
-          rhs[ENG] += dt * (EXPAND( ZERO_F                                              ,
-                                    + Vc(RHO,k,j,i) * Vc(VX2,k,j,i) * forcingTerm(JDIR,k,j,i)   ,
-                                    + Vc(RHO,k,j,i) * Vc(VX3,k,j,i) * forcingTerm(KDIR,k,j,i) ));
-        }
-      #endif
-      #if DIMENSIONS == 2 && COMPONENTS == 3
-        // Only add this term once!
-        if constexpr (dir==JDIR) {
-          rhs[MX3] += dt * Vc(RHO,k,j,i) * forcingTerm(KDIR,k,j,i);
-          if constexpr(Phys::pressure) {
-            rhs[ENG] += dt * Vc(RHO,k,j,i) * Vc(VX3,k,j,i) * forcingTerm(KDIR,k,j,i);
-          }
-        }
-      #endif
-    }
-
 
     // Timestep computation
     // Change elementary grid spacing according to local coarsening level.
