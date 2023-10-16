@@ -41,10 +41,7 @@ public:
     IdefixArray3D<real> ouValues;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-//    void InitProcesses(int, int, real, real);
-//    void InitProcesses(int, int, real, real, real, real, real);
-    void InitProcesses(int, int, int, int, real, real, real, real, real);
-//    void UpdateProcessesValues(real, IdefixArray1D<real>);
+    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
     void UpdateProcessesValues(real);
 };
 
