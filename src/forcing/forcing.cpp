@@ -14,6 +14,7 @@
 Forcing::Forcing(Input &input, DataBlock *datain) {
   idfx::pushRegion("Forcing::Forcing");
   this->data = datain;
+  this->seed = input.GetOrSet<int>("Forcing","seed",0,0);
 
   // Forcing
   #if GEOMETRY == SPHERICAL
@@ -36,7 +37,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                                 data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   
-    this->OUprocesses.InitProcesses(this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
+    this->OUprocesses.InitProcesses(this->seed,this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
   #endif // GEOMETRY == SPHERICAL
 
 //  this->skipGravity = input.GetOrSet<int>("Gravity","skip",0,1);
@@ -48,10 +49,10 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
 void Forcing::ShowConfig() {
   #if GEOMETRY == SPHERICAL
-    idfx::cout << "Forcing: ENABLED." << std::endl;
+    idfx::cout << "Forcing: ENABLED with seed " << seed << "." << std::endl;
     idfx::cout << "Forcing: lmin=" << lmin << " and lmax=" << lmax << "." << std::endl;
     idfx::cout << "Forcing: mmin=" << mmin << " and mmax=" << mmax << "." << std::endl;
-    idfx::cout << "Forcing: t_corr=" << this->t_corr << " ." << std::endl;
+    idfx::cout << "Forcing: t_corr=" << t_corr << " ." << std::endl;
     idfx::cout << "Forcing: eps_Ylm=" << eps_Ylm << ", eps_Slm=" << eps_Slm << ", eps_Tlm =" << eps_Tlm << " ." << std::endl;
   #endif // GEOMETRY == SPHERICAL
 //    if(skipGravity>1) {

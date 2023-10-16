@@ -43,11 +43,14 @@ class Forcing {
 //  friend class PlanetarySystem;
 
   DataBlock *data;
+  int seed;
 
   real t_corr;
-  real eps_Ylm;
-  real eps_Slm;
-  real eps_Tlm;
+  #if GEOMETRY == SPHERICAL
+    real eps_Ylm;
+    real eps_Slm;
+    real eps_Tlm;
+  #endif
   OrnsteinUhlenbeckProcesses OUprocesses;
 
 };
