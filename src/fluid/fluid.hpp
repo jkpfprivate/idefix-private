@@ -60,6 +60,7 @@ class Fluid {
   template <int> void CalcParabolicFlux(const real);
   template <int> void AddNonIdealMHDFlux(const real);
   template <int> void CalcRightHandSide(real, real );
+  template <int> void CalcForcingRHS(real, real );
   void CalcCurrent();
   void AddSourceTerms(real, real );
   void CoarsenFlow(IdefixArray4D<real>&);
@@ -218,6 +219,9 @@ class Fluid {
 
   template <typename P, int dir>
   friend struct Fluid_CalcRHSFunctor;
+
+  template <typename P, int dir>
+  friend struct Fluid_CalcForcingFunctor;
 
   template<typename P>
   friend struct ShockFlattening_FindShockFunctor;

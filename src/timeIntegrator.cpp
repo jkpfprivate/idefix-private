@@ -361,6 +361,9 @@ void TimeIntegrator::Cycle(DataBlock &data) {
 
   if(data.haveForcing) {
     data.EvolveForcing(data.t, data.dt);
+
+    // Back to using Vc
+    data.ConsToPrim();
   }
 
   if(haveRKL && (ncycles%2)==0) {    // Runge-Kutta-Legendre cycle
