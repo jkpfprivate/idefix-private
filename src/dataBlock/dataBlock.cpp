@@ -178,9 +178,11 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     #endif // GEOMETRY == SPHERICAL
     this->forcing = std::make_unique<Forcing>(input, this);
     #if GEOMETRY == SPHERICAL
-      if (this->forcing->lmax > lmax || forcing->mmax > mmax) {
-        IDEFIX_ERROR("lmax and mmax used by the Forcing module should not be greater than those used by the Vsh class");
-      }
+      #if VSH == YES
+        if (this->forcing->lmax > this->lmax || forcing->mmax > this->mmax) {
+          IDEFIX_ERROR("lmax and mmax used by the Forcing module should not be greater than those used by the Vsh class");
+        }
+      #endif // VSH == YES
     #endif // GEOMETRY == SPHERICAL
     this->haveForcing = true;
   }
