@@ -23,10 +23,7 @@ class DataBlockHost;
 
 class Vsh {
   public:
-//    Vsh(Input&, DataBlockHost*); // Default constructor
-//    Vsh(int, int, DataBlockHost*); 
-//    Vsh(DataBlockHost*); 
-    Vsh(DataBlockHost*, int); 
+    Vsh(DataBlockHost*, int); // Default constructor
 
     int nphi;
     int nphi_proc;
@@ -43,14 +40,6 @@ class Vsh {
     int ighost;
     int lmax;
     int mmax;
-//    IdefixArray1D<real> x1; // spherical bessel function
-//    IdefixArray1D<real> x1l; // spherical bessel function
-
-//    IdefixArray2D<real> jl; // spherical bessel function
-//    IdefixArray2D<real> jls; // spherical bessel function at interface
-//    // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
-//    IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
-//    IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
 
     IdefixArray1D<real>::HostMirror x1; // spherical bessel function
     IdefixArray1D<real>::HostMirror x1l; // spherical bessel function
@@ -81,5 +70,4 @@ class Vsh {
     void write_vect(std::string, double *, int);
     void write_mx(std::string, double *, int, int);
 };
-
 #endif // VSH_VSH_HPP_

@@ -14,16 +14,11 @@
 
 #include "vsh.hpp"
 #include "dataBlockHost.hpp"
-//#include "input.hpp"
 
-//Vsh::Vsh(Input &input, DataBlockHost *datain) {
-//Vsh::Vsh(int lmax, int mmax, DataBlockHost *datain) {
 Vsh::Vsh(DataBlockHost *datain, int write) {
-//  this->nphi = datain->mygrid->np_int[KDIR];
   this->nphi = datain->nphi_tot;
   this->nphi_proc = datain->np_int[KDIR];
   this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
-//  this->ntheta = datain->mygrid->np_int[JDIR];
   this->ntheta = datain->nth_tot;
   this->ntheta_proc = datain->np_int[JDIR];
   this->ntheta_shtns = 2*ntheta + 1;
@@ -36,8 +31,6 @@ Vsh::Vsh(DataBlockHost *datain, int write) {
   this->x1 = datain->x[IDIR];
   this->x1l = datain->xl[IDIR];
 
-//  this->lmax = input.GetOrSet<int>("Vsh","lmax",0, ntheta/2-1);
-//  this->mmax = input.GetOrSet<int>("Vsh","mmax",0, ntheta/2-1);
   this->lmax = datain->lmax;
   this->mmax = datain->mmax;
 
@@ -98,9 +91,10 @@ void Vsh::GenerateCellVsh() {
   int verbose = (idfx::prank == 0) ? 1 : 0;
   shtns_verbose(verbose);                       // displays informations during initialization.
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
-//        shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
+//  shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
   shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
-  //**** Default normalisation is SHTNS orthonormalized i.e. C_m Y_lm_ortho with C_m = 2 if m!=0 ***//
+  //**** Default normalisation is SHTNS orthonormalized i.e. C_m Y_lm_ortho with C_m = 2 if m!=0 and 1 otherwise.
+  //**** Default norm of SHTNS S/T_lm is sqrt(l(l_1)), so we divide by this quantity.
 
   NLM = shtns->nlm;
   Yr = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
@@ -113,11 +107,12 @@ void Vsh::GenerateCellVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
+    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
     for(int m = 0; m < std::min(this->mmax, l+1); m++) {
       LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
-      Slm[LM(shtns,l,m)] = 1.0;
-      Tlm[LM(shtns,l,m)] = 1.0;
+      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       SH_to_spat(shtns,Ylm,Yr);
       SHsph_to_spat(shtns,Slm,Stheta,Sphi);
       SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
@@ -166,7 +161,8 @@ void Vsh::GenerateCellVsh() {
   shtns_destroy(shtns);
 }
 
-void Vsh::GenerateInterfaceVsh() { //defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
+//defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
+void Vsh::GenerateInterfaceVsh() { 
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -178,7 +174,6 @@ void Vsh::GenerateInterfaceVsh() { //defined at the right interface between cell
   int verbose = (idfx::prank == 0) ? 1 : 0;
   shtns_verbose(verbose);                       // displays informations during initialization.
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
-//        shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
 //  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
   shtns = shtns_init( sht_reg_poles, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
 
@@ -191,10 +186,11 @@ void Vsh::GenerateInterfaceVsh() { //defined at the right interface between cell
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
+    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
-      Slm[LM(shtns,l,m)] = 1.0;
-      Tlm[LM(shtns,l,m)] = 1.0;
+      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       SHsph_to_spat(shtns,Slm,Stheta,Sphi);
       SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
       if (write==1 & idfx::prank==0) {
@@ -248,7 +244,7 @@ void Vsh::GenerateCellGhostVsh() {
   int verbose = (idfx::prank == 0) ? 1 : 0;
   shtns_verbose(verbose);                       // displays informations during initialization.
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
-//        shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
+//  shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
   shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
 
   NLM = shtns->nlm;
@@ -262,11 +258,12 @@ void Vsh::GenerateCellGhostVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
+    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
-      Slm[LM(shtns,l,m)] = 1.0;
-      Tlm[LM(shtns,l,m)] = 1.0;
+      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       SH_to_spat(shtns,Ylm,Yr);
       SHsph_to_spat(shtns,Slm,Stheta,Sphi);
       SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
@@ -364,10 +361,11 @@ void Vsh::GenerateInterfaceGhostVsh() {
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   for(int l = 0; l < this->lmax; l++) {
+    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
-      Slm[LM(shtns,l,m)] = 1.0;
-      Tlm[LM(shtns,l,m)] = 1.0;
+      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       SHsph_to_spat(shtns,Slm,Stheta,Sphi);
       SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
 
