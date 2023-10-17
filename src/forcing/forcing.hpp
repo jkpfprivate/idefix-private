@@ -32,7 +32,7 @@ class Forcing {
 //  // Whether we should skip gravity computation every n steps
 //  int skipGravity{1};
 
-  #if GEOMETRY == SPHERICAL
+  #if GEOMETRY == SPHERICAL & VSH == YES
     real lmin;
     real mmin;
     real lmax;
@@ -46,7 +46,7 @@ class Forcing {
   int seed;
 
   real t_corr;
-  #if GEOMETRY == SPHERICAL
+  #if GEOMETRY == SPHERICAL & VSH == YES
     real eps_Ylm;
     real eps_Slm;
     real eps_Tlm;
