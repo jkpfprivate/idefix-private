@@ -18,7 +18,7 @@
 
 //Vsh::Vsh(Input &input, DataBlockHost *datain) {
 //Vsh::Vsh(int lmax, int mmax, DataBlockHost *datain) {
-Vsh::Vsh(DataBlockHost *datain) {
+Vsh::Vsh(DataBlockHost *datain, int write) {
 //  this->nphi = datain->mygrid->np_int[KDIR];
   this->nphi = datain->nphi_tot;
   this->nphi_proc = datain->np_int[KDIR];
@@ -41,6 +41,8 @@ Vsh::Vsh(DataBlockHost *datain) {
   this->lmax = datain->lmax;
   this->mmax = datain->mmax;
 
+  this->write = write;
+
   this->jl = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
   this->jls = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
   this->Ylm_r = IdefixArray4D<real>::HostMirror ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
@@ -53,6 +55,20 @@ Vsh::Vsh(DataBlockHost *datain) {
   this->Slm_phis = IdefixArray4D<real>::HostMirror ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_ths = IdefixArray4D<real>::HostMirror ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Tlm_phis = IdefixArray4D<real>::HostMirror ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+
+  for(int l = 0; l < this->lmax; l++) {
+    for(int m = 0; m < this->mmax; m++) {
+      for(int k = 0; k < nphi_proc+2*kghost; k++) {
+        for(int j = 0; j < ntheta_proc+2*jghost; j++) {
+          this->Ylm_r(l,m,k,j) = 0.;
+          this->Slm_th(l,m,k,j) = 0.;
+          this->Slm_phi(l,m,k,j) = 0.;
+          this->Tlm_th(l,m,k,j) = 0.;
+          this->Tlm_phi(l,m,k,j) = 0.;
+        }
+      }
+    }
+  }
 } 
 
 void Vsh::ShowConfig() {
@@ -69,7 +85,7 @@ void Vsh::Generatejl() {
   }
 }
 
-void Vsh::GenerateCellVsh(int write) {
+void Vsh::GenerateCellVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Ylm, *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
@@ -84,6 +100,7 @@ void Vsh::GenerateCellVsh(int write) {
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
 //        shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
   shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
+  //**** Default normalisation is SHTNS orthonormalized i.e. C_m Y_lm_ortho with C_m = 2 if m!=0 ***//
 
   NLM = shtns->nlm;
   Yr = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
@@ -96,7 +113,7 @@ void Vsh::GenerateCellVsh(int write) {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
-    for(int m = 0; m < this->mmax; m++) {
+    for(int m = 0; m < std::min(this->mmax, l+1); m++) {
       LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
       Slm[LM(shtns,l,m)] = 1.0;
@@ -108,6 +125,7 @@ void Vsh::GenerateCellVsh(int write) {
         std::string path;
         path = "datavsh/Yr"+std::to_string(l)+std::to_string(m);
         std::cout << path << std::endl;
+        this->write_mx(path,Yr,nphi_shtns,ntheta);
         path = "datavsh/Stheta"+std::to_string(l)+std::to_string(m);
         std::cout << path << std::endl;
         this->write_mx(path,Stheta,nphi_shtns,ntheta);
@@ -148,7 +166,7 @@ void Vsh::GenerateCellVsh(int write) {
   shtns_destroy(shtns);
 }
 
-void Vsh::GenerateInterfaceVsh(int write) { //defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
+void Vsh::GenerateInterfaceVsh() { //defined at the right interface between cells in the direction of the corresponding component, like the magnetic field BX1s,2s,3s
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
   std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.

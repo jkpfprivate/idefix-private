@@ -167,6 +167,7 @@ class DataBlock {
 
   // Do we have VSH ?
   #if VSH == YES
+    int write;
     int nth_tot, nphi_tot;
     int lmax, mmax;
     IdefixArray2D<real> jl; // spherical bessel function

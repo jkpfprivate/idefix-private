@@ -146,6 +146,7 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
   #if VSH == YES
     nth_tot = input.Get<int>("Grid","X2-grid",2);
     nphi_tot = input.Get<int>("Grid","X3-grid",2);
+    write = input.GetOrSet<int>("Vsh","write",0, 0);
     lmax = input.GetOrSet<int>("Vsh","lmax",0, 3);
     mmax = input.GetOrSet<int>("Vsh","mmax",0, 3);
     

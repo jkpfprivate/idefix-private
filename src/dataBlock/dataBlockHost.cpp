@@ -82,15 +82,16 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
   if (hasVsh) {
 //    vsh = std::make_unique<Vsh>(input, this);
 //    vsh = std::make_unique<Vsh>(lmax, mmax, this);
+    int write = data->write;
     lmax = data->lmax;
     mmax = data->mmax;
     nth_tot = data->nth_tot;
     nphi_tot = data->nphi_tot;
-    vsh = std::make_unique<Vsh>(this);
+    vsh = std::make_unique<Vsh>(this, write);
     vsh->Generatejl();
-    vsh->GenerateCellVsh(0);
+    vsh->GenerateCellVsh();
     vsh->GenerateCellGhostVsh();
-    vsh->GenerateInterfaceVsh(0);
+    vsh->GenerateInterfaceVsh();
     vsh->GenerateInterfaceGhostVsh();
 
     Ylm_r = vsh->Ylm_r;
