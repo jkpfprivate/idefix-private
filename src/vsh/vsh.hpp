@@ -25,7 +25,8 @@ class Vsh {
   public:
 //    Vsh(Input&, DataBlockHost*); // Default constructor
 //    Vsh(int, int, DataBlockHost*); 
-    Vsh(DataBlockHost*); 
+//    Vsh(DataBlockHost*); 
+    Vsh(DataBlockHost*, int); 
 
     int nphi;
     int nphi_proc;
@@ -69,12 +70,14 @@ class Vsh {
 
     void ShowConfig();
     void Generatejl();
-    void GenerateCellVsh(int);
-    void GenerateInterfaceVsh(int);
+    void GenerateCellVsh();
+    void GenerateInterfaceVsh();
     void GenerateCellGhostVsh();
     void GenerateInterfaceGhostVsh();
  
   private:
+    int write;
+
     void write_vect(std::string, double *, int);
     void write_mx(std::string, double *, int, int);
 };
