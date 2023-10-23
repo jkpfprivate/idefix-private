@@ -28,6 +28,7 @@ class Forcing {
 
   // Forcing term
   IdefixArray4D<real> forcingTerm;
+  OrnsteinUhlenbeckProcesses OUprocesses;
 
 //  // Whether we should skip gravity computation every n steps
 //  int skipGravity{1};
@@ -39,6 +40,7 @@ class Forcing {
     real mmax;
   #endif
 
+  int write;
  private:
 //  friend class PlanetarySystem;
 
@@ -51,7 +53,6 @@ class Forcing {
     real eps_Slm;
     real eps_Tlm;
   #endif
-  OrnsteinUhlenbeckProcesses OUprocesses;
 
 };
 

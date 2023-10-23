@@ -15,13 +15,13 @@
 #ifndef ORNSTEIN_UHLENBECK_PROCESS_HPP
 #define ORNSTEIN_UHLENBECK_PROCESS_HPP
 
-#include <iostream>
 //#include <random>
 //#include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 #include "idefix.hpp"
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 //#include <ofstream>
 
 
@@ -44,10 +44,16 @@ public:
     IdefixArray3D<real> ouValues;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
+//    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
+    void InitProcesses(std::string, int, int, int, int, int, real, real, real, real, real);
     void UpdateProcessesValues(real);
 
-    std::ofstream myfile;
+    std::string filename;
+    void ResetProcessesValues();
+    void WriteProcessesValues();
+    int precision;
+
+    std::ofstream file;
 };
 
 #endif  // ORNSTEIN_UHLENBECK_PROCESS_HPP

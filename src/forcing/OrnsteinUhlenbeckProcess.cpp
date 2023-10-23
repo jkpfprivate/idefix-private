@@ -18,7 +18,8 @@ OrnsteinUhlenbeckProcesses::OrnsteinUhlenbeckProcesses()
 { // Default (empty) constructor
 }
 
-void OrnsteinUhlenbeckProcesses::InitProcesses(int seed, int lmin, int lmax, int mmin, int mmax, real mean, real tcorr, real eps_Ylm, real eps_Slm, real eps_Tlm) {
+void OrnsteinUhlenbeckProcesses::InitProcesses(std::string filename, int seed, int lmin, int lmax, int mmin, int mmax, real mean, real tcorr, real eps_Ylm, real eps_Slm, real eps_Tlm) {
+//void OrnsteinUhlenbeckProcesses::InitProcesses(int seed, int lmin, int lmax, int mmin, int mmax, real mean, real tcorr, real eps_Ylm, real eps_Slm, real eps_Tlm) {
   this->lmin = lmin;
   this->lmax = lmax;
   this->mmin = mmin;
@@ -48,6 +49,9 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(int seed, int lmin, int lmax, int
           epsilons(vshcomp,l,m) = ZERO_F;
         }
   });
+
+  this->filename = filename;
+  this->precision = 10;
 }
 
 //void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt, IdefixArray1D<real> epsilons) {
@@ -62,23 +66,53 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
       if (m < l+1) {
         auto generator = random_pool.get_state();
         real normal = generator.normal(0., 1.);
-  printf("%f;", normal);
         random_pool.free_state(generator);
         real expTerm = std::exp(-dt/tcorrs(vshcomp,l,m));
         real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
         real newValue = means(vshcomp,l,m) + (ouValues(vshcomp,l,m)-means(vshcomp,l,m))*expTerm + dou;
         ouValues(vshcomp,l,m) = newValue;
-  std::string ouFile = "checkFiles/ou_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
-  myfile.open (ouFile, std::fstream::app);
-  myfile << newValue << ";";
-  myfile.close();
-  std::string normalFile = "checkFiles/normal_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
-  myfile.open (normalFile, std::fstream::app);
-  myfile << normal << ";";
-  myfile.close();
       } else {
         ouValues(vshcomp,l,m) = 0.;
       }
   });
 }
+
+void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
+  if(idfx::prank==0) {
+    file.open(filename, std::ios::trunc);
+    int col_width = precision + 10;
+    idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
+                KOKKOS_LAMBDA (int vshcomp, int l, int m) {
+      std::string vsh_name = (vshcomp == 0) ? "Y" : "S";
+      vsh_name = (vshcomp == 1) ? "S" : "T";
+//  std::string ouFile = "checkFiles/ou_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
+//  myfile.open (ouFile, std::fstream::app);
+//  myfile << newValue << ";";
+//  myfile.close();
+//  std::string normalFile = "checkFiles/normal_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
+//  myfile.open (normalFile, std::fstream::app);
+//  myfile << normal << ";";
+//  myfile.close();
+      file << std::setw(col_width) << vsh_name + std::to_string(l) + std::to_string(m);
+    });
+    file << std::endl;
+    file.close();
+  }
+}
+
+//void OrnsteinUhlenbeckProcess::WriteProcessesValues() {
+//void OrnsteinUhlenbeckProcess::ResetProcessesValues() {
+//  file.open(filename, std::ios::app);
+//  file.precision(precision);
+//  IdefixArray3D<real> ouValues = this->ouValues;
+////  idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
+////              KOKKOS_LAMBDA (int vshcomp, int l, int m) {
+////      if(idfx::prank==0) {
+////        int col_width = precision + 10;
+////        this->file << std::scientific << std::setw(col_width) << m;
+////      }
+////  });
+//  file << std::endl;
+//  file.close();
+//}
 
