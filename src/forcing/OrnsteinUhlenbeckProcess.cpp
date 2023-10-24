@@ -35,12 +35,18 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(int seed, int lmin, int lmax, int
   IdefixArray3D<real> ouValues = this->ouValues;
   idefix_for("InitProcesses", 0, 3, 0, lmax, 0, mmax,
               KOKKOS_LAMBDA (int vshcomp, int l, int m) {
-        means(vshcomp,l,m) = mean;
-        tcorrs(vshcomp,l,m) = tcorr;
-        if (vshcomp==0) { epsilons(vshcomp,l,m) = eps_Ylm;}
-        if (vshcomp==1) { epsilons(vshcomp,l,m) = eps_Slm;}
-        if (vshcomp==2) { epsilons(vshcomp,l,m) = eps_Tlm;}
-        ouValues(vshcomp,l,m) = mean;
+        if (l >= lmin & m >= mmin) {
+          means(vshcomp,l,m) = mean;
+          tcorrs(vshcomp,l,m) = tcorr;
+          if (vshcomp==0) { epsilons(vshcomp,l,m) = eps_Ylm;}
+          if (vshcomp==1) { epsilons(vshcomp,l,m) = eps_Slm;}
+          if (vshcomp==2) { epsilons(vshcomp,l,m) = eps_Tlm;}
+          ouValues(vshcomp,l,m) = mean;
+        } else {
+          means(vshcomp,l,m) = ZERO_F;
+          tcorrs(vshcomp,l,m) = ZERO_F;
+          epsilons(vshcomp,l,m) = ZERO_F;
+        }
   });
 }
 
@@ -51,17 +57,19 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   IdefixArray3D<real> epsilons = this->epsilons;
   IdefixArray3D<real> ouValues = this->ouValues;
   Kokkos::Random_XorShift64_Pool<> random_pool = this->random_pool;
-  idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
+  idefix_for("UpdateProcesses", 0, 3, lmin, lmax, mmin, mmax,
               KOKKOS_LAMBDA (int vshcomp, int l, int m) {
-//      real normal = 0.5;
-   auto generator = random_pool.get_state();
-   real normal = generator.normal(0., 1.);
-   random_pool.free_state(generator);
-      real expTerm = std::exp(-dt/tcorrs(vshcomp,l,m));
-      real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
-      real newValue = means(vshcomp,l,m) + (ouValues(vshcomp,l,m)-means(vshcomp,l,m))*expTerm + dou;
-      ouValues(vshcomp,l,m) = newValue;
-//      ouValues(vshcomp,l,m) = 10.;
+      if (m < l+1) {
+        auto generator = random_pool.get_state();
+        real normal = generator.normal(0., 1.);
+        random_pool.free_state(generator);
+        real expTerm = std::exp(-dt/tcorrs(vshcomp,l,m));
+        real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
+        real newValue = means(vshcomp,l,m) + (ouValues(vshcomp,l,m)-means(vshcomp,l,m))*expTerm + dou;
+        ouValues(vshcomp,l,m) = newValue;
+      } else {
+        ouValues(vshcomp,l,m) = 0.;
+      }
   });
 }
 
