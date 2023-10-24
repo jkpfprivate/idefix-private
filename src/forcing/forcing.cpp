@@ -29,7 +29,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     } else if (lmin >= lmax) {
       IDEFIX_ERROR("Forcing: lmax cannot be less than or equal to lmax");
     } else if (mmin >= mmax) {
-      IDEFIX_ERROR("Forcing: mmax cannot be less than or equal to mmax");
+      IDEFIX_ERROR("Forcing: mmin cannot be less than or equal to mmax");
     }
     this->t_corr = input.GetOrSet<real>("Forcing","t_corr",0, 1.);
     this->eps_Ylm = input.GetOrSet<real>("Forcing","eps_Ylm",0, 1.);
@@ -105,7 +105,7 @@ void Forcing::ComputeForcing(real dt) {
                       for (int l=lmin; l<lmax; l++) {
 //                        real jli = jl(l,i);
                         real jli = 1.;
-                        for (int m=mmin; m<mmax; m++) {
+                        for (int m=mmin; m<mmax & m<l+1 ; m++) {
                           forcing_MX1 += jli*Ylm_r(l,m,k,j)*OuValues(0,l,m);
                           forcing_MX2 += jli*Slm_th(l,m,k,j)*OuValues(1,l,m) + jli*Tlm_th(l,m,k,j)*OuValues(2,l,m);
                           forcing_MX3 += jli*Slm_phi(l,m,k,j)*OuValues(1,l,m) + jli*Tlm_phi(l,m,k,j)*OuValues(2,l,m);
