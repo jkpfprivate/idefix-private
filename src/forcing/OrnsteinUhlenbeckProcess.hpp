@@ -42,6 +42,7 @@ private:
 
 public:
     IdefixArray3D<real> ouValues;
+    IdefixHostArray3D<real> ouValuesHost;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
 //    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
@@ -50,7 +51,7 @@ public:
 
     std::string filename;
     void ResetProcessesValues();
-    void WriteProcessesValues();
+    void WriteProcessesValues(real);
     int precision;
 
     std::ofstream file;
