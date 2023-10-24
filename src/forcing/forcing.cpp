@@ -36,7 +36,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->eps_Slm = input.GetOrSet<real>("Forcing","eps_Slm",0, 1.);
     this->eps_Tlm = input.GetOrSet<real>("Forcing","eps_Tlm",0, 1.);
     this->write = input.GetOrSet<int>("Forcing","write",0, 0);
-    std::string filename = input.GetOrSet<std::string>("Forcing","filename",0, "testOU.dat");
+    std::string filename = input.GetOrSet<std::string>("Forcing","filename",0, "testOU");
 
     // Allocate required arrays
     this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,

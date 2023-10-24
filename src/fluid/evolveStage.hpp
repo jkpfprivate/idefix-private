@@ -92,9 +92,9 @@ void Fluid<Phys>::EvolveForcing(const real t, const real dt) {
   idfx::pushRegion("Fluid::EvolveForcing");
 
   data->forcing->ComputeForcing(dt);
-//  if (data->forcing->write) {
-//    data->forcing->OUprocesses.WriteProcessesValues();
-//  }
+  if (data->forcing->write) {
+    data->forcing->OUprocesses.WriteProcessesValues(t);
+  }
 
   // Loop on all of the directions
   LoopForcingDir<IDIR>(t,dt);

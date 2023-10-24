@@ -50,8 +50,9 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string filename, int seed, i
         }
   });
 
-  this->filename = filename;
+  this->filename = filename + "_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->precision = 10;
+  this->ouValuesHost = IdefixHostArray3D<real> ("ouValuesHost", 3, lmax, mmax);
 }
 
 //void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt, IdefixArray1D<real> epsilons) {
@@ -68,7 +69,7 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
         real normal = generator.normal(0., 1.);
         random_pool.free_state(generator);
         real expTerm = std::exp(-dt/tcorrs(vshcomp,l,m));
-        real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1 - expTerm*expTerm))*normal;
+        real dou = std::sqrt(epsilons(vshcomp,l,m)/tcorrs(vshcomp,l,m)*(1. - expTerm*expTerm))*normal;
         real newValue = means(vshcomp,l,m) + (ouValues(vshcomp,l,m)-means(vshcomp,l,m))*expTerm + dou;
         ouValues(vshcomp,l,m) = newValue;
       } else {
@@ -81,38 +82,67 @@ void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
   if(idfx::prank==0) {
     file.open(filename, std::ios::trunc);
     int col_width = precision + 10;
-    idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
-                KOKKOS_LAMBDA (int vshcomp, int l, int m) {
-      std::string vsh_name = (vshcomp == 0) ? "Y" : "S";
-      vsh_name = (vshcomp == 1) ? "S" : "T";
-//  std::string ouFile = "checkFiles/ou_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
-//  myfile.open (ouFile, std::fstream::app);
-//  myfile << newValue << ";";
-//  myfile.close();
-//  std::string normalFile = "checkFiles/normal_comp" + std::to_string(vshcomp) + "_lmax" + std::to_string(l) + "_mmax" + std::to_string(m) + ".csv";
-//  myfile.open (normalFile, std::fstream::app);
-//  myfile << normal << ";";
-//  myfile.close();
-      file << std::setw(col_width) << vsh_name + std::to_string(l) + std::to_string(m);
-    });
+    file << std::setw(col_width) << "t";
+    for (int vshcomp=0; vshcomp<3; vshcomp++) {
+      for (int l=lmin; l<lmax; l++) {
+        for (int m=mmin; m<mmax & m<l+1 ; m++) {
+        std::string vsh_name = (vshcomp == 0) ? "Y" : "S";
+        vsh_name = (vshcomp != 0 & vshcomp != 1) ? "T" : vsh_name;
+        file << std::setw(col_width) << vsh_name + std::to_string(l) + std::to_string(m);
+        }
+        }
+        }
+    file << std::endl;
+    file.close();
+  } else if(idfx::prank==1) {
+    file.open(filename, std::ios::trunc);
+    int col_width = precision + 10;
+    file << std::setw(col_width) << "t";
+    for (int vshcomp=0; vshcomp<3; vshcomp++) {
+      for (int l=lmin; l<lmax; l++) {
+        for (int m=mmin; m<mmax & m<l+1 ; m++) {
+        std::string vsh_name = (vshcomp == 0) ? "Y" : "S";
+        vsh_name = (vshcomp != 0 & vshcomp != 1) ? "T" : vsh_name;
+        file << std::setw(col_width) << vsh_name + std::to_string(l) + std::to_string(m);
+        }
+        }
+        }
     file << std::endl;
     file.close();
   }
 }
 
-//void OrnsteinUhlenbeckProcess::WriteProcessesValues() {
-//void OrnsteinUhlenbeckProcess::ResetProcessesValues() {
-//  file.open(filename, std::ios::app);
-//  file.precision(precision);
-//  IdefixArray3D<real> ouValues = this->ouValues;
-////  idefix_for("UpdateProcesses", 0, 3, 0, lmax, 0, mmax,
-////              KOKKOS_LAMBDA (int vshcomp, int l, int m) {
-////      if(idfx::prank==0) {
-////        int col_width = precision + 10;
-////        this->file << std::scientific << std::setw(col_width) << m;
-////      }
-////  });
-//  file << std::endl;
-//  file.close();
-//}
+void OrnsteinUhlenbeckProcesses::WriteProcessesValues(real time) {
+  if(idfx::prank==0) {
+    int col_width = precision + 10;
+    file.open(filename, std::ios::app);
+    file.precision(precision);
+    this->file << std::scientific << std::setw(col_width) << time;
+    Kokkos::deep_copy(ouValuesHost, ouValues);
+    for (int vshcomp=0; vshcomp<3; vshcomp++) {
+      for (int l=lmin; l<lmax; l++) {
+        for (int m=mmin; m<mmax & m<l+1 ; m++) {
+            file << std::scientific << std::setw(col_width) << ouValuesHost(vshcomp, l, m);
+        }
+        }
+        }
+    file << std::endl;
+    file.close();
+  } else if(idfx::prank==1) {
+    int col_width = precision + 10;
+    file.open(filename, std::ios::app);
+    file.precision(precision);
+    this->file << std::scientific << std::setw(col_width) << time;
+    Kokkos::deep_copy(ouValuesHost, ouValues);
+    for (int vshcomp=0; vshcomp<3; vshcomp++) {
+      for (int l=lmin; l<lmax; l++) {
+        for (int m=mmin; m<mmax & m<l+1 ; m++) {
+            file << std::scientific << std::setw(col_width) << ouValuesHost(vshcomp, l, m);
+        }
+        }
+        }
+    file << std::endl;
+    file.close();
+  }
+}
 
