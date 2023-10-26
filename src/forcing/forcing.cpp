@@ -36,13 +36,13 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->eps_Slm = input.GetOrSet<real>("Forcing","eps_Slm",0, 1.);
     this->eps_Tlm = input.GetOrSet<real>("Forcing","eps_Tlm",0, 1.);
     this->write = input.GetOrSet<int>("Forcing","write",0, 0);
-    std::string filename = input.GetOrSet<std::string>("Forcing","filename",0, "testOU");
+    std::string folder = input.GetOrSet<std::string>("Forcing","filename",0, "testOU");
 
     // Allocate required arrays
     this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                                 data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   
-    this->OUprocesses.InitProcesses(filename,this->seed,this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
+    this->OUprocesses.InitProcesses(folder,this->seed,this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
 //    this->OUprocesses.InitProcesses(this->seed,this->lmin,this->lmax,this->mmin,this->mmax,0.,t_corr,eps_Ylm,eps_Slm,eps_Tlm);
   #endif // GEOMETRY == SPHERICAL & VSH = YES
 
