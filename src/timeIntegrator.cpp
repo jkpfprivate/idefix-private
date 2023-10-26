@@ -83,6 +83,7 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
 
   if(data.haveForcing & data.forcing->write) {
     data.forcing->OUprocesses.ResetProcessesValues();
+    data.forcing->OUprocesses.ResetNormalValues();
   }
 
   idfx::popRegion();
