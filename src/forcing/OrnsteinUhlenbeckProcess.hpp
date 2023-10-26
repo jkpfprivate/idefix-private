@@ -36,22 +36,25 @@ private:
     IdefixArray3D<real> tcorrs;
     IdefixArray3D<real> epsilons;
 
-//    std::default_random_engine generator;
-//    std::normal_distribution<real> normal_distribution;
     Kokkos::Random_XorShift64_Pool<> random_pool;
 
 public:
     IdefixArray3D<real> ouValues;
     IdefixHostArray3D<real> ouValuesHost;
+    IdefixArray3D<real> normalValues;
+    IdefixHostArray3D<real> normalValuesHost;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
 //    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
     void InitProcesses(std::string, int, int, int, int, int, real, real, real, real, real);
     void UpdateProcessesValues(real);
 
-    std::string filename;
+    std::string ouFilename;
+    std::string normalFilename;
     void ResetProcessesValues();
     void WriteProcessesValues(real);
+    void ResetNormalValues();
+    void WriteNormalValues(real);
     int precision;
 
     std::ofstream file;
