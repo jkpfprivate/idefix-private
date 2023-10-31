@@ -81,9 +81,11 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
     data.states["begin"].AllocateAs(data.states["current"]);
   }
 
-  if(data.haveForcing & data.forcing->write) {
-    data.forcing->OUprocesses.ResetProcessesValues();
-    data.forcing->OUprocesses.ResetNormalValues();
+  if(data.haveForcing) {
+    if(data.forcing->write) {
+      data.forcing->OUprocesses.ResetProcessesValues();
+      data.forcing->OUprocesses.ResetNormalValues();
+    }
   }
 
   idfx::popRegion();
