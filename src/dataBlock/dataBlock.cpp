@@ -148,7 +148,11 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     nphi_tot = input.Get<int>("Grid","X3-grid",2);
     write = input.GetOrSet<int>("Vsh","write",0, 0);
     lmax = input.GetOrSet<int>("Vsh","lmax",0, 3);
-    mmax = input.GetOrSet<int>("Vsh","mmax",0, 3);
+    #if DIMENSIONS == 3
+      mmax = input.GetOrSet<int>("Vsh","mmax",0, 3);
+    #else
+      mmax = 1;
+    #endif //DIMENSIONS == 3
     
     // Allocate required arrays
     this->jl = IdefixArray2D<real>("jl", lmax, this->np_tot[IDIR]);
