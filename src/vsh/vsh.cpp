@@ -16,9 +16,15 @@
 #include "dataBlockHost.hpp"
 
 Vsh::Vsh(DataBlockHost *datain, int write) {
-  this->nphi = datain->nphi_tot;
-  this->nphi_proc = datain->np_int[KDIR];
-  this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
+  #if DIMENSIONS == 3
+    this->nphi = datain->nphi_tot;
+    this->nphi_proc = datain->np_int[KDIR];
+    this->nphi_shtns = 2*nphi; //so to have the points at the right coordinates, because the phi-grid is equally spaced between 0 (included) and 2*M_PI (excluded)
+  #else
+    this->nphi = 1;
+    this->nphi_proc = 1;
+    this->nphi_shtns = 32;
+  #endif //DIMENSIONS = 3
   this->ntheta = datain->nth_tot;
   this->ntheta_proc = datain->np_int[JDIR];
   this->ntheta_shtns = 2*ntheta + 1;
@@ -32,7 +38,11 @@ Vsh::Vsh(DataBlockHost *datain, int write) {
   this->x1l = datain->xl[IDIR];
 
   this->lmax = datain->lmax;
-  this->mmax = datain->mmax;
+  #if DIMENSIONS == 3
+    this->mmax = datain->mmax;
+  #else
+    this->mmax = 1;
+  #endif //DIMENSIONS == 3
 
   this->write = write;
 
@@ -107,7 +117,7 @@ void Vsh::GenerateCellVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
-    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
+    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < std::min(this->mmax, l+1); m++) {
       LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
@@ -186,7 +196,7 @@ void Vsh::GenerateInterfaceVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
-    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
+    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
@@ -258,7 +268,7 @@ void Vsh::GenerateCellGhostVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
-    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
+    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
@@ -361,7 +371,7 @@ void Vsh::GenerateInterfaceGhostVsh() {
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   for(int l = 0; l < this->lmax; l++) {
-    int sqrt_ll = (l != 0) ? sqrt(l*(l+1)) : 1;
+    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
       LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
       Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
