@@ -338,9 +338,11 @@ void DataBlock::ShowConfig() {
   if(haveFargo) fargo->ShowConfig();
   if(haveplanetarySystem) planetarySystem->ShowConfig();
   if(haveGravity) gravity->ShowConfig();
-//  #if VSH == YES
-//    vsh->ShowConfig();
-//  #endif // VSH == YES
+  #if VSH == YES
+    idfx::cout << "Vsh: ENABLED." << std::endl;
+    idfx::cout << "Vsh: lmax=" << this->lmax << " and mmax=" << this->mmax << "." << std::endl;
+  #endif // VSH == YES
+
   if(haveUserStepFirst) idfx::cout << "DataBlock: User's first step has been enrolled."
                                    << std::endl;
   if(haveUserStepLast) idfx::cout << "DataBlock: User's last step has been enrolled."
