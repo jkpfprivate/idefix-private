@@ -47,7 +47,7 @@ Vsh::Vsh(DataBlockHost *datain, int write) {
   this->write = write;
 
   this->jl = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
-  this->jls = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
+  this->jls = IdefixArray2D<real>::HostMirror ("jls", lmax, nr_proc+2*ighost);
   this->Ylm_r = IdefixArray4D<real>::HostMirror ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Slm_th = IdefixArray4D<real>::HostMirror ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
   this->Slm_phi = IdefixArray4D<real>::HostMirror ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
