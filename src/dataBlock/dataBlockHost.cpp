@@ -9,7 +9,21 @@
 #include "dataBlockHost.hpp"
 #include "fluid.hpp"
 
+#if VSH == YES
 DataBlockHost::DataBlockHost(DataBlock& datain) {
+   *this = DataBlockHost(datain, 1);
+}
+
+void DataBlockHost::SyncToDevice() {
+    SyncToDevice(1);
+}
+#endif //VSH == YES
+
+#if VSH == YES
+DataBlockHost::DataBlockHost(DataBlock& datain, int hasVsh) {
+#else
+DataBlockHost::DataBlockHost(DataBlock& datain) {
+#endif //VSH == YES
   idfx::pushRegion("DataBlockHost::DataBlockHost(DataBlock)");
 
   // copy the dataBlock object for later use
@@ -64,8 +78,8 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
             Ex2 = Kokkos::create_mirror_view(data->hydro->emf->ey);  )
 #endif
 
-  // Initialise vsh if needed
-  #if VSH == YES
+#if VSH == YES
+  if (hasVsh) {
 //    vsh = std::make_unique<Vsh>(input, this);
 //    vsh = std::make_unique<Vsh>(lmax, mmax, this);
     lmax = data->lmax;
@@ -88,7 +102,8 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
     Slm_phis = vsh->Slm_phis;
     Tlm_ths = vsh->Tlm_ths;
     Tlm_phis = vsh->Tlm_phis;
-  #endif // VSH == YES
+  }
+#endif// VSH == YES
 
   if(haveDust) {
     dustVc = std::vector<IdefixHostArray4D<real>>(data->dust.size());
@@ -125,7 +140,11 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
 }
 
 // Synchronisation routines of Data (*Only*)
+#if VSH == YES
+void DataBlockHost::SyncToDevice(int hasVsh) {
+#else
 void DataBlockHost::SyncToDevice() {
+#endif // VSH == YES
   idfx::pushRegion("DataBlockHost::SyncToDevice()");
 
   Kokkos::deep_copy(data->hydro->Vc,Vc);
@@ -144,8 +163,8 @@ void DataBlockHost::SyncToDevice() {
             Kokkos::deep_copy(data->hydro->emf->ey,Ex2);  )
 #endif
 
-  // Communicate VSH is needed
-  #if VSH == YES
+#if VSH == YES
+  if (hasVsh) {
     Kokkos::deep_copy(data->Ylm_r,Ylm_r);
     Kokkos::deep_copy(data->Slm_th,Slm_th);
     Kokkos::deep_copy(data->Slm_phi,Slm_phi);
@@ -155,7 +174,8 @@ void DataBlockHost::SyncToDevice() {
     Kokkos::deep_copy(data->Slm_phis,Slm_phis);
     Kokkos::deep_copy(data->Tlm_ths,Tlm_ths);
     Kokkos::deep_copy(data->Tlm_phis,Tlm_phis);
-  #endif // VSH == YES
+  }
+#endif// VSH == YES
   if(haveDust) {
     for(int i = 0 ; i < dustVc.size() ; i++) {
       Kokkos::deep_copy(data->dust[i]->Vc, dustVc[i]);
@@ -286,3 +306,4 @@ void DataBlockHost::MakeVsFromAmag(IdefixHostArray4D<real> &Ain) {
   IDEFIX_ERROR("This function cannot be used without MHD enabled");
 #endif
 }
+

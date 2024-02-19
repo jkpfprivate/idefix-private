@@ -112,6 +112,10 @@ class DataBlockHost {
 
   explicit DataBlockHost(DataBlock &);        ///< Constructor from a device datablock
                                               ///< (NB: does not sync any data)
+  #if VSH == YES
+  explicit DataBlockHost(DataBlock &, int);        ///< Constructor from a device datablock
+                                                   ///< (NB: does not sync any data)
+  #endif // VSH == YES
 
   DataBlockHost() = default;                  ///< Default constructor
 
@@ -124,6 +128,9 @@ class DataBlockHost {
                                                   ///< potential vector in argument
 
   void SyncToDevice();                            ///< Synchronize this to the device datablock
+  #if VSH == YES
+    void SyncToDevice(int);                            ///< Synchronize this to the device datablock
+  #endif // VSH == YES
   void SyncFromDevice();                          ///< Synchronize this from the device datablock
 
   bool haveCurrent;                               ///< Whether the electrical current J is defined
