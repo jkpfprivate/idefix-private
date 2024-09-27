@@ -14,9 +14,6 @@
 
 class DataBlock;
 
-//using BodyForceFunc = void (*) (DataBlock &, const real t, IdefixArray4D<real>&);
-
-
 class Forcing {
  public:
   Forcing(Input&, DataBlock*);
@@ -26,6 +23,8 @@ class Forcing {
 
   void ShowConfig();                ///< Show the forcing configuration
 
+  // Forcing modes
+  IdefixArray4D<real> forcingModes;
   // Forcing term
   IdefixArray4D<real> forcingTerm;
   OrnsteinUhlenbeckProcesses OUprocesses;
@@ -33,16 +32,8 @@ class Forcing {
 //  // Whether we should skip gravity computation every n steps
 //  int skipGravity{1};
 
-  #if GEOMETRY == SPHERICAL & VSH == YES
-    real lmin;
-    real mmin;
-    real lmax;
-    real mmax;
-  #endif
-
   int write;
  private:
-//  friend class PlanetarySystem;
 
   DataBlock *data;
   int seed;
