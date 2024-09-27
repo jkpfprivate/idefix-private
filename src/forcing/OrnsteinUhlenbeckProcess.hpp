@@ -27,7 +27,7 @@
 
 class OrnsteinUhlenbeckProcesses {
 private:
-    int nForcingModes;
+    int nSeries;
 
     IdefixArray1D<real> means;
     IdefixArray1D<real> tcorrs;
