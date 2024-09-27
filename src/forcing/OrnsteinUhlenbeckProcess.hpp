@@ -27,26 +27,23 @@
 
 class OrnsteinUhlenbeckProcesses {
 private:
-    int lmin;
-    int mmin;
-    int lmax;
-    int mmax;
+    int nForcingModes;
 
-    IdefixArray3D<real> means;
-    IdefixArray3D<real> tcorrs;
-    IdefixArray3D<real> epsilons;
+    IdefixArray1D<real> means;
+    IdefixArray1D<real> tcorrs;
+    IdefixArray1D<real> epsilons;
 
     Kokkos::Random_XorShift64_Pool<> random_pool;
 
 public:
-    IdefixArray3D<real> ouValues;
-    IdefixHostArray3D<real> ouValuesHost;
-    IdefixArray3D<real> normalValues;
-    IdefixHostArray3D<real> normalValuesHost;
+    IdefixArray1D<real> ouValues;
+    IdefixHostArray1D<real> ouValuesHost;
+    IdefixArray1D<real> normalValues;
+    IdefixHostArray1D<real> normalValuesHost;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
 //    void InitProcesses(int, int, int, int, int, real, real, real, real, real);
-    void InitProcesses(std::string, int, int, int, int, int, real, real, real, real, real);
+    void InitProcesses(std::string, int, int, IdefixArray1D<real>, IdefixArray1D<real>, IdefixArray1D<real>);
     void UpdateProcessesValues(real);
 
     std::string ouFilename;
