@@ -18,23 +18,23 @@ OrnsteinUhlenbeckProcesses::OrnsteinUhlenbeckProcesses()
 { // Default (empty) constructor
 }
 
-void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int nForcingModes, IdefixArray1D<real> mean, IdefixArray1D<real> tcorr, IdefixArray1D<real> epsilon) {
-  this->nForcingModes = nForcingModes;
-  this->epsilons = IdefixArray1D<real> ("ouEpsilons", nForcingModes);
-  this->tcorrs = IdefixArray1D<real> ("ouTcorrs", nForcingModes);
-  this->means = IdefixArray1D<real> ("ouMeans", nForcingModes);
-  this->ouValues = IdefixArray1D<real> ("ouValues", nForcingModes);
-  this->normalValues = IdefixArray1D<real> ("normalValues", nForcingModes);
+void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int nSeries, IdefixArray1D<real> mean, IdefixArray1D<real> tcorr, IdefixArray1D<real> epsilon) {
+  this->nSeries = nSeries;
+  this->epsilons = IdefixArray1D<real> ("ouEpsilons", nSeries);
+  this->tcorrs = IdefixArray1D<real> ("ouTcorrs", nSeries);
+  this->means = IdefixArray1D<real> ("ouMeans", nSeries);
+  this->ouValues = IdefixArray1D<real> ("ouValues", nSeries);
+  this->normalValues = IdefixArray1D<real> ("normalValues", nSeries);
   this->random_pool = Kokkos::Random_XorShift64_Pool<> (/*seed=*/seed);
 
   IdefixArray1D<real> means = this->means;
   IdefixArray1D<real> tcorrs = this->tcorrs;
   IdefixArray1D<real> epsilons = this->epsilons;
   IdefixArray1D<real> ouValues = this->ouValues;
-  IdefixArray1D<real> mean = mean;
-  IdefixArray1D<real> tcorr = tcorr;
-  IdefixArray1D<real> epsilon = epsilon;
-  idefix_for("InitProcesses", 0, nForcingModes
+//  IdefixArray1D<real> mean = mean;
+//  IdefixArray1D<real> tcorr = tcorr;
+//  IdefixArray1D<real> epsilon = epsilon;
+  idefix_for("InitProcesses", 0, nSeries,
               KOKKOS_LAMBDA (int l) {
         means(l) = mean(l);
         tcorrs(l) = tcorr(l);
@@ -44,8 +44,8 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
   this->ouFilename = folder + "/ou_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->normalFilename = folder + "/normal_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->precision = 10;
-  this->ouValuesHost = IdefixHostArray1D<real> ("ouValuesHost", l);
-  this->normalValuesHost = IdefixHostArray1D<real> ("normalValuesHost", l);
+  this->ouValuesHost = IdefixHostArray1D<real> ("ouValuesHost", nSeries);
+  this->normalValuesHost = IdefixHostArray1D<real> ("normalValuesHost", nSeries);
 }
 
 //void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt, IdefixArray1D<real> epsilons) {
@@ -56,7 +56,7 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   IdefixArray1D<real> ouValues = this->ouValues;
   IdefixArray1D<real> normalValues = this->normalValues;
   Kokkos::Random_XorShift64_Pool<> random_pool = this->random_pool;
-  idefix_for("UpdateProcesses", 0, nForcingModes,
+  idefix_for("UpdateProcesses", 0, nSeries,
               KOKKOS_LAMBDA (int l) {
       auto generator = random_pool.get_state();
       real normal = generator.normal(0., 1.);
@@ -74,7 +74,7 @@ void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
     file.open(ouFilename, std::ios::trunc);
     int col_width = precision + 10;
     file << std::setw(col_width) << "t";
-    for (int l=0; l<nForcingModes; l++) {
+    for (int l=0; l<nSeries; l++) {
       std::string current_name = std::to_string(l);
       file << std::setw(col_width) << current_name;
     }
@@ -90,7 +90,7 @@ void OrnsteinUhlenbeckProcesses::WriteProcessesValues(real time) {
     file.precision(precision);
     this->file << std::scientific << std::setw(col_width) << time;
     Kokkos::deep_copy(ouValuesHost, ouValues);
-    for (int l=0; l<nForcingModes; l++) {
+    for (int l=0; l<nSeries; l++) {
       file << std::scientific << std::setw(col_width) << ouValuesHost(l);
     }
     file << std::endl;
@@ -103,7 +103,7 @@ void OrnsteinUhlenbeckProcesses::ResetNormalValues() {
     file.open(normalFilename, std::ios::trunc);
     int col_width = precision + 10;
     file << std::setw(col_width) << "t";
-    for (int l=0; l<nForcingModes; l++) {
+    for (int l=0; l<nSeries; l++) {
       std::string current_name = std::to_string(l);
       file << std::setw(col_width) << current_name;
     }
@@ -119,7 +119,7 @@ void OrnsteinUhlenbeckProcesses::WriteNormalValues(real time) {
     file.precision(precision);
     this->file << std::scientific << std::setw(col_width) << time;
     Kokkos::deep_copy(normalValuesHost, normalValues);
-    for (int l=0; l<nForcingModes; l++) {
+    for (int l=0; l<nSeries; l++) {
       file << std::scientific << std::setw(col_width) << normalValuesHost(l);
     }
     file << std::endl;
