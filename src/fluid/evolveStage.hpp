@@ -93,8 +93,8 @@ void Fluid<Phys>::EvolveForcing(const real t, const real dt) {
 
   data->forcing->ComputeForcing(dt);
   if (data->forcing->write) {
-    data->forcing->OUprocesses.WriteProcessesValues(t);
-    data->forcing->OUprocesses.WriteNormalValues(t);
+    data->forcing->oUprocesses.WriteProcessesValues(t);
+    data->forcing->oUprocesses.WriteNormalValues(t);
   }
 
   // Loop on all of the directions

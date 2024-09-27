@@ -16,39 +16,10 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   this->data = datain;
   this->seed = input.GetOrSet<int>("Forcing","seed",0,0);
 
-  // Forcing
-//  #if GEOMETRY == SPHERICAL & VSH == YES
-//    this->lmin = input.GetOrSet<int>("Forcing","lmin",0, 0);
-//    this->mmin = input.GetOrSet<int>("Forcing","mmin",0, 0);
-//    this->lmax = input.GetOrSet<int>("Forcing","lmax",0, 3);
-//    this->mmax = input.GetOrSet<int>("Forcing","mmax",0, 3);
-//    if (mmax > lmax) {
-//      IDEFIX_ERROR("Forcing: mmax cannot be greater than lmax");
-//    } else if (mmin > lmin) {
-//      IDEFIX_ERROR("Forcing: mmin cannot be greater than lmin");
-//    } else if (lmin >= lmax) {
-//      IDEFIX_ERROR("Forcing: lmax cannot be less than or equal to lmax");
-//    } else if (mmin >= mmax) {
-//      IDEFIX_ERROR("Forcing: mmin cannot be less than or equal to mmax");
-//    }
-//    this->t_corr = input.GetOrSet<real>("Forcing","t_corr",0, 1.);
-//    this->eps_Ylm = input.GetOrSet<real>("Forcing","eps_Ylm",0, 1.);
-//    this->eps_Slm = input.GetOrSet<real>("Forcing","eps_Slm",0, 1.);
-//    this->eps_Tlm = input.GetOrSet<real>("Forcing","eps_Tlm",0, 1.);
-
   this->write = input.GetOrSet<int>("Forcing","write",0, 0);
   std::string folder = input.GetOrSet<std::string>("Forcing","filename",0, "testOU");
 
-//  #endif // GEOMETRY == SPHERICAL & VSH = YES
-
-//  this->have3Diso = false;
-//  this->have2Diso = false;
-//  this->haveVsh = false;
-//  this->haveUserDef = false;
-
-//  this->nForcingModesIdir = 0;
-//  this->nForcingModesJdir = 0;
-//  this->nForcingModesKdir = 0;
+//  this->nForcingModesVsh = 0;
   this->nForcingModes = 0;
 
   this->kmin = -1.;
@@ -58,10 +29,10 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   this->mmin = -1.;
   this->mmax = -1.;
 
+//  real [maybe_unused] kx0, ky0, kz0;
   real kx0, ky0, kz0;
 
   if (input.CheckEntry("Forcing", "3Diso")>=0) {
-//    this->have3Diso = true;
     this->forcingType = iso3D;
     #if GEOMETRY != CARTESIAN
       IDEFIX_ERROR("You cannot have 3D isotropic forcing in another geometry than Cartesian");
@@ -72,21 +43,14 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->kmin = input.Get<int>("Forcing","3Diso", 1);
     this->kmax = input.Get<int>("Forcing","3Diso", 2);
 
-//    k3Diso = std::vector<std::vector<real>>(0);
     std::vector<std::vector<real>> k3Disovec;
 
     kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
     ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
     kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
-    int nxmax = kmax/kx0;
-    int nymax = kmax/ky0;
-    int nzmax = kmax/kz0;
-//    int nxmin = kmin/kx0;
-//    int nymin = kmin/ky0;
-//    int nzmin = kmin/kz0;
-//    for (int nx=nxmin; nx<nxmax; nx++) {
-//      for (int ny=nymin; ny<nymax; ny++) {
-//        for (int nz=nzmin; nz<nzmax; nz++) {
+    int nxmax = kmax/kx0 + 1;
+    int nymax = kmax/ky0 + 1;
+    int nzmax = kmax/kz0 + 1;
     for (int nx=0; nx<nxmax; nx++) {
       for (int ny=0; ny<nymax; ny++) {
         for (int nz=0; nz<nzmax; nz++) {
@@ -101,7 +65,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
         }
       }
     }
-    k3DisoHost = IdefixHostArray2D<real>("k3DisoHost", nForcingModes);
+    k3DisoHost = IdefixHostArray2D<real>("k3DisoHost", nForcingModes, 3);
     k3Diso = IdefixArray2D<real>("k3Diso", nForcingModes, 3);
     for (int l=0; l<nForcingModes; l++) {
       k3DisoHost(l,0) = k3Disovec[l][0];
@@ -109,24 +73,51 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       k3DisoHost(l,2) = k3Disovec[l][2];
     }
     Kokkos::deep_copy(k3Diso, k3DisoHost);
-   
-
     this->forcingModes = IdefixArray4D<Kokkos::complex<real>>("forcingModes", nForcingModes);
-    this->forcingModesIdir = IdefixArray4D<real>("forcingModesIdir", nForcingModes);
-    this->forcingModesJdir = IdefixArray4D<real>("forcingModesJdir", nForcingModes);
-    this->forcingModesKdir = IdefixArray4D<real>("forcingModesKdir", nForcingModes);
   }
 
   else if (input.CheckEntry("Forcing", "2Diso")>=0) {
-//    this->have2Diso = true;
     this->forcingType = iso2D;
     this->normal2Diso = input.Get<int>("Forcing","3Diso", 1);
     if (normal2Diso < 0 or normal2Diso > 2) IDEFIX_ERROR("The normal component for 2D isotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
     #if COMPONENTS < 2 or DIMENSIONS < 2
       IDEFIX_ERROR("You cannot have 2D isotropic forcing with less than 2 components and dimensions.");
     #endif //COMPONENTS < 3 or DIMENSIONS < 3
+
     this->kmin = input.Get<int>("Forcing","3Diso", 2);
     this->kmax = input.Get<int>("Forcing","3Diso", 3);
+
+    std::vector<std::vector<real>> k2Disovec;
+
+    kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
+    ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
+    kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
+    int nxmax = (this->normal2Diso==IDIR) ? 1 : kmax/kx0 + 1;
+    int nymax = (this->normal2Diso==JDIR) ? 1 : kmax/ky0 + 1;
+    int nzmax = (this->normal2Diso==KDIR) ? 1 : kmax/kz0 + 1;
+    for (int nx=0; nx<nxmax; nx++) {
+      for (int ny=0; ny<nymax; ny++) {
+        for (int nz=0; nz<nzmax; nz++) {
+          real kx = kx0*nx;
+          real ky = ky0*ny;
+          real kz = kz0*nz;
+          real k_2 = kx*kx + ky*ky + kz*kz;
+          if (k_2 >= kmin*kmin and k_2 <= kmax*kmax) {
+            nForcingModes ++;
+            k2Disovec.push_back({kx, ky, kz});
+          }
+        }
+      }
+    }
+    k2DisoHost = IdefixHostArray2D<real>("k2DisoHost", nForcingModes, 3);
+    k2Diso = IdefixArray2D<real>("k2Diso", nForcingModes, 3);
+    for (int l=0; l<nForcingModes; l++) {
+      k2DisoHost(l,0) = k2Disovec[l][0];
+      k2DisoHost(l,1) = k2Disovec[l][1];
+      k2DisoHost(l,2) = k2Disovec[l][2];
+    }
+    Kokkos::deep_copy(k2Diso, k2DisoHost);
+    this->forcingModes = IdefixArray4D<Kokkos::complex<real>>("forcingModes", nForcingModes);
   }
 
   else if (input.CheckEntry("Forcing", "vsh")>=0) {
@@ -142,38 +133,42 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     this->ellmax = input.Get<int>("Forcing","vsh", 2);
     this->mmin = input.GetOrSet<int>("Forcing","vsh", 3, 0);
     this->mmax = input.GetOrSet<int>("Forcing","vsh", 4, this->ellmax);
+
+    std::vector<std::vector<int>> ellmVshvec;
     for (int ell=ellmin; ell<ellmax; ell++) {
       for (int m=mmin; m<mmax & m<ell+1 ; m++) {
-        this->nForcingModesIdir++;
-        this->nForcingModesJdir++;
-        this->nForcingModesKdir++;
+        this->nForcingModes++;
+        ellmVshvec.push_back({ell,m});
       }
     }
+    ellmVshHost = IdefixHostArray2D<real>("ellmVshHost", nForcingModes, 2);
+    ellmVsh = IdefixArray2D<real>("ellmVsh", nForcingModes, 2);
+    for (int l=0; l<nForcingModes; l++) {
+      ellmVshHost(l,0) = ellmVshvec[l][0];
+      ellmVshHost(l,1) = ellmVshvec[l][1];
+    }
+    Kokkos::deep_copy(ellmVshHost, ellmVsh);
+
+    this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes);
     // WARNING, vsh case needs a special treatment since the forcing modes between
     // the theta and phi directions are coupled to each other...
-    this->nForcingModesJdir *= 2;
-    this->nForcingModesKdir *= 2;
-    #if VSH == NO
-      IDEFIX_ERROR("You cannot have vsh forcing without the VSH module.");
-    #endif //VSH == NO
-    this->forcingModesIdir = IdefixArray4D<real>("forcingModesIdir", nForcingModesIdir);
-    this->forcingModesJdir = IdefixArray4D<real>("forcingModesJdir", nForcingModesJdir);
-    this->forcingModesKdir = IdefixArray4D<real>("forcingModesKdir", nForcingModesKdir);
+    this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", 2*nForcingModes);
+    this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", 2*nForcingModes);
   }
 
 //  else { this->haveUserDef = true;}
   else { this->forcingType = userDef;}
 
-  this->nForcingModes = this->nForcingModesIdir + this->nForcingModesJdir + this->nForcingModesKdir;
-
   // Allocate required arrays
   this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
                               data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
-  this->means = IdefixArray1D<real>("means", nForcingModes);
-  this->tcorrs = IdefixArray1D<real>("tcorrs", nForcingModes);
-  this->epsilons = IdefixArray1D<real>("epsilons", nForcingModes);
+  this->means = IdefixArray2D<real>("means", nForcingModes, KDIR);
+  this->tcorrs = IdefixArray2D<real>("tcorrs", nForcingModes, KDIR);
+  this->epsilons = IdefixArray2D<real>("epsilons", nForcingModes, KDIR);
 
-  this->OUprocesses.InitProcesses(folder, this->seed, this->nForcingModes, this->means, this->tcorrs, this->epsilons);
+// WARNING DO SOMETHING WITH MEANS TCORRS AND EPSILONS
+
+  this->oUprocesses.InitProcesses(folder, this->seed, this->nForcingModes, this->means, this->tcorrs, this->epsilons);
 
   idfx::popRegion();
 }
@@ -207,13 +202,15 @@ void Forcing::ShowConfig() {
 void Forcing::InitForcingModes() {
   idfx::pushRegion("Forcing::InitForcingModes");
   IdefixArray4D<Kokkos::complex<real>> forcingModes = this->forcingModes;
-  IdefixArray4D<real> forcingModesIdir = this->forcingModesIdir;
-  IdefixArray4D<real> forcingModesJdir = this->forcingModesJdir;
-  IdefixArray4D<real> forcingModesKdir = this->forcingModesKdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
   IdefixArray1D<real> x1 = data->x[IDIR];
   IdefixArray1D<real> x2 = data->x[JDIR];
   IdefixArray1D<real> x3 = data->x[KDIR];
   IdefixArray2D<real> k3Diso = this->k3Diso;
+  IdefixArray2D<real> k2Diso = this->k2Diso;
+  IdefixArray2D<real> ellmVsh = this->ellmVsh;
   Kokkos::complex unit_j(0.,1.);
   idefix_for("Forcing::InitForcingModes",
               0, nForcingModes,
@@ -221,50 +218,52 @@ void Forcing::InitForcingModes() {
               0, data->np_tot[JDIR],
               0, data->np_tot[IDIR],
               KOKKOS_LAMBDA(int l, int k, int j, int i) {
+                forcingModes(l,k,j,i) = ZERO_F;
                 forcingModesIdir(l,k,j,i) = ZERO_F;
                 forcingModesJdir(l,k,j,i) = ZERO_F;
                 forcingModesKdir(l,k,j,i) = ZERO_F;
               });
-  real kx0, ky0, kz0;
   switch(forcingType) {
     case ForcingType::iso3D:
-      kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
-      ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
-      kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
       idefix_for("ComputeForcing", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
                   KOKKOS_LAMBDA (int l, int k, int j, int i) {
                     real kx = k3Diso(l, IDIR);
                     real ky = k3Diso(l, JDIR);
                     real kz = k3Diso(l, KDIR);
-//                    real kx = k3Diso[l][IDIR];
-//                    real ky = k3Diso[l][JDIR];
-//                    real kz = k3Diso[l][KDIR];
                     forcingModes(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
       });
+      Kokkos::deep_copy(forcingModesIdir, forcingModes);
+      Kokkos::deep_copy(forcingModesJdir, forcingModes);
+      Kokkos::deep_copy(forcingModesKdir, forcingModes);
       break;
     case ForcingType::iso2D:
-      kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
-      ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
-      kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
+      idefix_for("ComputeForcing", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
+                  KOKKOS_LAMBDA (int l, int k, int j, int i) {
+                    real kx = k2Diso(l, IDIR);
+                    real ky = k2Diso(l, JDIR);
+                    real kz = k2Diso(l, JDIR);
+                    forcingModes(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
+      });
+      Kokkos::deep_copy(forcingModesIdir, forcingModes);
+      Kokkos::deep_copy(forcingModesJdir, forcingModes);
+      Kokkos::deep_copy(forcingModesKdir, forcingModes);
       break;
     #if VSH == YES
       case ForcingType::vsh:
-        int ellmin = this->ellmin;
-        int ellmax = this->ellmax;
-        int mmin = this->mmin;
-        int mmax = this->mmax;
         IdefixArray4D<real> Ylm_r = this->data->Ylm_r;
         IdefixArray4D<real> Slm_th = this->data->Slm_th;
         IdefixArray4D<real> Slm_phi = this->data->Slm_phi;
         IdefixArray4D<real> Tlm_th = this->data->Tlm_th;
         IdefixArray4D<real> Tlm_phi = this->data->Tlm_phi;
-        idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
-                    KOKKOS_LAMBDA (int k, int j, int i) {
-                      for (int ell=ellmin; ell<ellmax; ell++) {
-                        for (int m=mmin; m<mmax & m<ell+1 ; m++) {
-                          forcingModesIdir(ell,k,j,i) = Ylm_r(ell,m,j,i);
-                        }
-                      }
+        idefix_for("ComputeForcing", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
+                    KOKKOS_LAMBDA (int l, int k, int j, int i) {
+                      real ell = ellmVsh(l, 0);
+                      real m = ellmVsh(l, 1);
+//                      forcingModesIdir(l,k,j,i) = Ylm_r(ell,m,j,i);
+//                      forcingModesJdir(l,k,j,i) = Slm_th(ell,m,j,i);
+//                      forcingModesJdir(l+1,k,j,i) = Tlm_th(ell,m,j,i);
+//                      forcingModesKdir(l,k,j,i) = Slm_phi(ell,m,j,i);
+//                      forcingModesKdir(l+1,k,j,i) = Tlm_phi(ell,m,j,i);
         });
         break;
     #endif //VSH == YES
@@ -280,46 +279,35 @@ void Forcing::ComputeForcing(real dt) {
   
   ResetForcingTerm();
 
-//  #if GEOMETRY == CARTESIAN
-//    IDEFIX_ERROR("Forcing in CARTESIAN geometry not implemented");
-//  #endif // GEOMETRY == CARTESIAN
-//  #if GEOMETRY == POLAR
-//    IDEFIX_ERROR("Forcing in POLAR geometry not implemented");
-//  #endif // GEOMETRY == POLAR
-//  #if GEOMETRY == CYLINDRICAL
-//    IDEFIX_ERROR("Forcing in CYLINDRICAL geometry not implemented");
-//  #endif // GEOMETRY == CYLINDRICAL
-//  #if GEOMETRY == SPHERICAL
-//    #if VSH == YES
-  IdefixArray4D<real> forcingModesIdir = this->forcingModesIdir;
-  IdefixArray4D<real> forcingModesJdir = this->forcingModesJdir;
-  IdefixArray4D<real> forcingModesKdir = this->forcingModesKdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
   IdefixArray4D<real> forcingTerm = this->forcingTerm;
-  IdefixArray1D<real> OuValues = this->OUprocesses.ouValues;
+  IdefixArray2D<real> ouValues = this->oUprocesses.ouValues;
   int nForcingModes = this->nForcingModes;
   idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
               KOKKOS_LAMBDA (int k, int j, int i) {
-                  real forcing_MX1=0;
-                  real forcing_MX2=0;
-                  real forcing_MX3=0;
+                  Kokkos::complex<real> forcing_MX1=0.;
+                  Kokkos::complex<real> forcing_MX2=0.;
+                  Kokkos::complex<real> forcing_MX3=0.;
                   for (int l=0; l<nForcingModes; l++) {
-                    forcing_MX1 += OuValues(l)*forcingModesIdir(l,k,j,i);
+                    forcing_MX1 += ouValues(l,IDIR)*forcingModesIdir(l,k,j,i);
                     #if COMPONENTS >= 2
-                      forcing_MX2 += OuValues(l)*forcingModesJdir(l,k,j,i);
+                      forcing_MX2 += ouValues(l,JDIR)*forcingModesJdir(l,k,j,i);
                       #if COMPONENTS == 3
-                        forcing_MX3 += OuValues(l)*forcingModesKdir(l,k,j,i);
+                        forcing_MX3 += ouValues(l,KDIR)*forcingModesKdir(l,k,j,i);
                       #endif //COMPONENTS == 3
                     #endif //COMPONENTS >= 2
                   }
-                  forcingTerm(IDIR,k,j,i) += real(forcing_MX1);
-                  forcingTerm(JDIR,k,j,i) += real(forcing_MX2);
-                  forcingTerm(KDIR,k,j,i) += real(forcing_MX3);
+                  forcingTerm(IDIR,k,j,i) += forcing_MX1.real();
+                  forcingTerm(JDIR,k,j,i) += forcing_MX2.real();
+                  forcingTerm(KDIR,k,j,i) += forcing_MX3.real();
   });
 //    #endif // VSH == YES
 //  #endif // GEOMETRY == SPHERICAL
 
-  OUprocesses.UpdateProcessesValues(dt);
-//  OUprocesses.UpdateProcessesValues(dt, eps_Ylm, eps_Slm, eps_Tlm);
+  oUprocesses.UpdateProcessesValues(dt);
+//  oUprocesses.UpdateProcessesValues(dt, eps_Ylm, eps_Slm, eps_Tlm);
   idfx::popRegion();
 }
 
