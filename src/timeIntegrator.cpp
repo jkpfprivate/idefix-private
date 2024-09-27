@@ -83,8 +83,8 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
 
   if(data.haveForcing) {
     if(data.forcing->write) {
-      data.forcing->OUprocesses.ResetProcessesValues();
-      data.forcing->OUprocesses.ResetNormalValues();
+      data.forcing->oUprocesses.ResetProcessesValues();
+      data.forcing->oUprocesses.ResetNormalValues();
     }
   }
 
