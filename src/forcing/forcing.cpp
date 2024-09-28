@@ -283,7 +283,7 @@ void Forcing::ComputeForcing(real dt) {
   IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
   IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
   IdefixArray4D<real> forcingTerm = this->forcingTerm;
-  IdefixArray2D<real> ouValues = this->oUprocesses.ouValues;
+  IdefixArray2D<Kokkos::complex<real>> ouValues = this->oUprocesses.ouValues;
   int nForcingModes = this->nForcingModes;
   idefix_for("ComputeForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
               KOKKOS_LAMBDA (int k, int j, int i) {

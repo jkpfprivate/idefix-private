@@ -36,8 +36,8 @@ private:
     Kokkos::Random_XorShift64_Pool<> random_pool;
 
 public:
-    IdefixArray2D<real> ouValues;
-    IdefixHostArray2D<real> ouValuesHost;
+    IdefixArray2D<Kokkos::complex<real>> ouValues;
+    IdefixHostArray2D<Kokkos::complex<real>> ouValuesHost;
     IdefixArray2D<real> normalValues;
     IdefixHostArray2D<real> normalValuesHost;
 

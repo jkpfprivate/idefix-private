@@ -23,14 +23,14 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
   this->epsilons = IdefixArray2D<real> ("ouEpsilons", nSeries, KDIR);
   this->tcorrs = IdefixArray2D<real> ("ouTcorrs", nSeries, KDIR);
   this->means = IdefixArray2D<real> ("ouMeans", nSeries, KDIR);
-  this->ouValues = IdefixArray2D<real> ("ouValues", nSeries, KDIR);
+  this->ouValues = IdefixArray2D<Kokkos::complex<real>> ("ouValues", nSeries, KDIR);
   this->normalValues = IdefixArray2D<real> ("normalValues", nSeries, KDIR);
   this->random_pool = Kokkos::Random_XorShift64_Pool<> (/*seed=*/seed);
 
   IdefixArray2D<real> means = this->means;
   IdefixArray2D<real> tcorrs = this->tcorrs;
   IdefixArray2D<real> epsilons = this->epsilons;
-  IdefixArray2D<real> ouValues = this->ouValues;
+  IdefixArray2D<Kokkos::complex<real>> ouValues = this->ouValues;
   idefix_for("InitProcesses", 0, nSeries, IDIR, KDIR,
               KOKKOS_LAMBDA (int l, int dir) {
         means(l, dir) = mean(l, dir);
@@ -41,7 +41,7 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
   this->ouFilename = folder + "/ou_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->normalFilename = folder + "/normal_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->precision = 10;
-  this->ouValuesHost = IdefixHostArray2D<real> ("ouValuesHost", nSeries);
+  this->ouValuesHost = IdefixHostArray2D<Kokkos::complex<real>> ("ouValuesHost", nSeries);
   this->normalValuesHost = IdefixHostArray2D<real> ("normalValuesHost", nSeries);
 }
 
@@ -50,7 +50,7 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   IdefixArray2D<real> means = this->means;
   IdefixArray2D<real> tcorrs = this->tcorrs;
   IdefixArray2D<real> epsilons = this->epsilons;
-  IdefixArray2D<real> ouValues = this->ouValues;
+  IdefixArray2D<Kokkos::complex<real>> ouValues = this->ouValues;
   IdefixArray2D<real> normalValues = this->normalValues;
   Kokkos::Random_XorShift64_Pool<> random_pool = this->random_pool;
   idefix_for("UpdateProcesses", 0, nSeries, IDIR, KDIR,
@@ -61,8 +61,14 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
       normalValues(l, dir) = normal;
       real expTerm = std::exp(-dt/tcorrs(l, dir));
       real dou = std::sqrt(epsilons(l, dir)/tcorrs(l, dir)*(1. - expTerm*expTerm))*normal;
-      real newValue = means(l, dir) + (ouValues(l, dir)-means(l, dir))*expTerm + dou;
-      ouValues(l, dir) = newValue;
+      real mod = std::sqrt(pow(ouValues(l,dir).real(), 2) + pow(ouValues(l,dir).imag(), 2));
+      real newValue = means(l, dir) + (mod-means(l, dir))*expTerm + dou;
+
+      real arg = (ouValues(l,dir).imag()==0. and ouValues(l,dir).real()<0.) ? M_PI : 2*atan(ouValues(l,dir).imag()/(ouValues(l,dir).real() + mod));
+      dou = std::sqrt(2.*M_PI*(1. - expTerm*expTerm))*normal;
+      real newArg = arg*expTerm + dou;
+      Kokkos::complex<real> compNewValue(newValue*cos(newArg), newValue*sin(newArg));
+      ouValues(l, dir) = compNewValue;
   });
 }
 
@@ -91,7 +97,8 @@ void OrnsteinUhlenbeckProcesses::WriteProcessesValues(real time) {
     Kokkos::deep_copy(ouValuesHost, ouValues);
     for (int l=0; l<nSeries; l++) {
       for (int dir=IDIR; dir<KDIR; dir++) {
-        file << std::scientific << std::setw(col_width) << ouValuesHost(l, dir);
+        real mod = std::sqrt(pow(ouValues(l,dir).real(), 2) + pow(ouValues(l,dir).imag(), 2));
+        file << std::scientific << std::setw(col_width) << mod;
       }
     }
     file << std::endl;
