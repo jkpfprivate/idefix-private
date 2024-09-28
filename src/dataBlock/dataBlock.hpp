@@ -173,8 +173,8 @@ class DataBlock {
     IdefixArray2D<real> jl; // spherical bessel function
     IdefixArray2D<real> jls; // spherical bessel function at interface
     // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
-    IdefixArray4D<real> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
-    IdefixArray4D<real> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
+    IdefixArray4D<Kokkos::complex<real>> Ylm_r, Slm_th, Slm_phi, Tlm_th, Tlm_phi;
+    IdefixArray4D<Kokkos::complex<real>> Slm_ths, Slm_phis, Tlm_ths, Tlm_phis;
   #endif // VSH == YES
 
   // User step functions (before or after the main integrator step)

@@ -90,9 +90,9 @@ DataBlockHost::DataBlockHost(DataBlock& datain) {
     vsh = std::make_unique<Vsh>(this, write);
     vsh->Generatejl();
     vsh->GenerateCellVsh();
-    vsh->GenerateCellGhostVsh();
-    vsh->GenerateInterfaceVsh();
-    vsh->GenerateInterfaceGhostVsh();
+//    vsh->GenerateCellGhostVsh();
+//    vsh->GenerateInterfaceVsh();
+//    vsh->GenerateInterfaceGhostVsh();
 
     Ylm_r = vsh->Ylm_r;
     Slm_th = vsh->Slm_th;

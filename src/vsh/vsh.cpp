@@ -15,6 +15,8 @@
 #include "vsh.hpp"
 #include "dataBlockHost.hpp"
 
+#define LM_LOOP_CPLX( shtns, action ) { int lm=0; do { action } while(++lm < shtns->nlm_cplx); }
+
 Vsh::Vsh(DataBlockHost *datain, int write) {
   #if DIMENSIONS == 3
     this->nphi = datain->nphi_tot;
@@ -38,26 +40,27 @@ Vsh::Vsh(DataBlockHost *datain, int write) {
   this->x1l = datain->xl[IDIR];
 
   this->lmax = datain->lmax;
-  #if DIMENSIONS == 3
-    this->mmax = datain->mmax;
-  #else
-    this->mmax = 1;
-  #endif //DIMENSIONS == 3
+//  #if DIMENSIONS == 3
+//    this->mmax = datain->mmax;
+//  #else
+//    this->mmax = 1;
+//  #endif //DIMENSIONS == 3
+  this->mmax = datain->lmax;
 
   this->write = write;
 
   this->jl = IdefixArray2D<real>::HostMirror ("jl", lmax, nr_proc+2*ighost);
   this->jls = IdefixArray2D<real>::HostMirror ("jls", lmax, nr_proc+2*ighost);
-  this->Ylm_r = IdefixArray4D<real>::HostMirror ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_th = IdefixArray4D<real>::HostMirror ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_phi = IdefixArray4D<real>::HostMirror ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_th = IdefixArray4D<real>::HostMirror ("Tlm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_phi = IdefixArray4D<real>::HostMirror ("Tlm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Ylm_r = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Ylm_r", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_th = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Slm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_phi = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Slm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_th = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Tlm_th", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_phi = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Tlm_phi", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
 
-  this->Slm_ths = IdefixArray4D<real>::HostMirror ("Slm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Slm_phis = IdefixArray4D<real>::HostMirror ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_ths = IdefixArray4D<real>::HostMirror ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
-  this->Tlm_phis = IdefixArray4D<real>::HostMirror ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_ths = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Slm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Slm_phis = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Slm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_ths = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Tlm_ths", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
+  this->Tlm_phis = IdefixArray4D<Kokkos::complex<real>>::HostMirror ("Tlm_phis", lmax, mmax, nphi_proc+2*kghost, ntheta_proc+2*jghost);
 
   for(int l = 0; l < this->lmax; l++) {
     for(int m = 0; m < this->mmax; m++) {
@@ -91,10 +94,10 @@ void Vsh::Generatejl() {
 void Vsh::GenerateCellVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
-  std::complex<real> *Ylm, *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
-  real *Yr;                // real space : r
-  real *Stheta, *Sphi;                // real space : theta,phi
-  real *Ttheta, *Tphi;                // real space : theta,phi
+  std::complex<real> *Ylm, *Slm, *Tlm, *Zlm;      // spherical harmonics coefficients (l,m space): complex numbers.
+  std::complex<real> *Yr;                // real space : r
+  std::complex<real> *Stheta, *Sphi;                // real space : theta,phi
+  std::complex<real> *Ttheta, *Tphi;                // real space : theta,phi
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -102,55 +105,77 @@ void Vsh::GenerateCellVsh() {
   shtns_verbose(verbose);                       // displays informations during initialization.
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
 //  shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
-  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
+  shtns = shtns_init( sht_reg_fast, lmax, lmax, mres, ntheta, nphi_shtns );
+//  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
   //**** Default normalisation is SHTNS orthonormalized i.e. C_m Y_lm_ortho with C_m = 2 if m!=0 and 1 otherwise.
   //**** Default norm of SHTNS S/T_lm is sqrt(l(l_1)), so we divide by this quantity.
 
-  NLM = shtns->nlm;
-  Yr = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Tphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Ttheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Sphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Stheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
+  NLM = shtns->nlm_cplx;
+  Yr = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Sphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Stheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Ylm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
-
-  for(int l = 0; l < this->lmax; l++) {
-    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
-    for(int m = 0; m < std::min(this->mmax, l+1); m++) {
-      LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
-      Ylm[LM(shtns,l,m)] = 1.0;
-      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      SH_to_spat(shtns,Ylm,Yr);
-      SHsph_to_spat(shtns,Slm,Stheta,Sphi);
-      SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
-      if (write==1 and idfx::prank==0) {
-        std::string path;
-        path = "datavsh/Yr"+std::to_string(l)+std::to_string(m);
-        std::cout << path << std::endl;
-        this->write_mx(path,Yr,nphi_shtns,ntheta);
-        path = "datavsh/Stheta"+std::to_string(l)+std::to_string(m);
-        std::cout << path << std::endl;
-        this->write_mx(path,Stheta,nphi_shtns,ntheta);
-        path = "datavsh/Sphi"+std::to_string(l)+std::to_string(m);
-        std::cout << path << std::endl;
-        this->write_mx(path,Sphi,nphi_shtns,ntheta);
-        path = "datavsh/Ttheta"+std::to_string(l)+std::to_string(m);
-        std::cout << path << std::endl;
-        this->write_mx(path,Ttheta,nphi_shtns,ntheta);
-        path = "datavsh/Tphi"+std::to_string(l)+std::to_string(m);
-        std::cout << path << std::endl;
-        this->write_mx(path,Tphi,nphi_shtns,ntheta);
-      }
+  Zlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
       int kbeg = (koffset==0) ? kghost : 0;
       int jbeg = (joffset==0) ? jghost : 0;
       int kend = (koffset+nphi_proc-kghost>=nphi) ? nphi_proc+kghost : nphi_proc+2*kghost;
       int jend = (joffset+ntheta_proc-jghost>=ntheta) ? ntheta_proc+jghost : ntheta_proc+2*jghost;
+  for(int l = 0; l < this->lmax; l++) {
+    real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
+    for(int m = 0; m < std::min(this->mmax, l+1); m++) {
+      LM_LOOP_CPLX(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
+      Ylm[LM_cplx(shtns,l,m)] = 2.;
+      Slm[LM_cplx(shtns,l,m)] = 2.0/sqrt_ll;
+      Tlm[LM_cplx(shtns,l,m)] = 2.0/sqrt_ll;
+      SH_to_spat_cplx(shtns,Ylm,Yr);
+//      LM_LOOP_CPLX(shtns, std::cout << Ylm[lm] << std::endl;)
+      for(int t = 0; t < 10; t++) {
+//std::cout << Yr[t] << std::endl;
+      }
+//      for(int k = kbeg; k < kend; k++) {
+//        for(int j = jbeg; j < jend; j++) {
+//          std::complex<real> current_cplx = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
+//          this->Ylm_r(l,m,k,j).real() = current_cplx.real();
+//          this->Ylm_r(l,m,k,j).imag() = current_cplx.imag();
+//std::cout << Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)] << std::endl;
+//        }
+//      }
+      SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
+      SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
+      if (write==1 and idfx::prank==0) {
+        std::string path;
+        path = "datavsh/Yr"+std::to_string(l)+std::to_string(m);
+        std::cout << path << std::endl;
+        this->write_mx(path,Yr,nphi_shtns,ntheta);
+//        path = "datavsh/Stheta"+std::to_string(l)+std::to_string(m);
+//        std::cout << path << std::endl;
+//        this->write_mx(path,Stheta,nphi_shtns,ntheta);
+//        path = "datavsh/Sphi"+std::to_string(l)+std::to_string(m);
+//        std::cout << path << std::endl;
+//        this->write_mx(path,Sphi,nphi_shtns,ntheta);
+//        path = "datavsh/Ttheta"+std::to_string(l)+std::to_string(m);
+//        std::cout << path << std::endl;
+//        this->write_mx(path,Ttheta,nphi_shtns,ntheta);
+//        path = "datavsh/Tphi"+std::to_string(l)+std::to_string(m);
+//        std::cout << path << std::endl;
+//        this->write_mx(path,Tphi,nphi_shtns,ntheta);
+      }
+
       for(int k = kbeg; k < kend; k++) {
         for(int j = jbeg; j < jend; j++) {
+//          std::complex<real> current_cplx = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
+//          this->Ylm_r(l,m,k,j).real() = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)].real();
+//          this->Ylm_r(l,m,k,j).real() = current_cplx.real();
+//          this->Ylm_r(l,m,k,j).imag() = current_cplx.imag();
+//std::cout << Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)] << std::endl;
+//std::cout << current_cplx.real() << std::endl;
+//std::cout << Ylm[LM_cplx(shtns,l,m)] << std::endl;
+//std::cout << l << m << std::endl;
           this->Ylm_r(l,m,k,j) = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
           this->Slm_th(l,m,k,j) = Stheta[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
           this->Slm_phi(l,m,k,j) = Sphi[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
@@ -175,9 +200,9 @@ void Vsh::GenerateCellVsh() {
 void Vsh::GenerateInterfaceVsh() { 
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
-  std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
-  real *Stheta, *Sphi;                // real space : theta,phi
-  real *Ttheta, *Tphi;                // real space : theta,phi
+  std::complex<real> *Slm, *Tlm, *Zlm;      // spherical harmonics coefficients (l,m space): complex numbers.
+  std::complex<real> *Stheta, *Sphi;                // real space : theta,phi
+  std::complex<real> *Ttheta, *Tphi;                // real space : theta,phi
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -187,22 +212,22 @@ void Vsh::GenerateInterfaceVsh() {
 //  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
   shtns = shtns_init( sht_reg_poles, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
 
-  NLM = shtns->nlm;
-  Tphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Ttheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Sphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Stheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
+  NLM = shtns->nlm_cplx;
+  Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Sphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Stheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
+      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
       Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      SHsph_to_spat(shtns,Slm,Stheta,Sphi);
-      SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
+      SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
+      SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
       if (write==1 & idfx::prank==0) {
         std::string path;
         path = "datavsh/Sthetapoles"+std::to_string(l)+std::to_string(m);
@@ -244,10 +269,10 @@ void Vsh::GenerateInterfaceVsh() {
 void Vsh::GenerateCellGhostVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
-  std::complex<real> *Ylm, *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
-  real *Yr;                // real space : r
-  real *Stheta, *Sphi;                // real space : theta,phi
-  real *Ttheta, *Tphi;                // real space : theta,phi
+  std::complex<real> *Ylm, *Slm, *Tlm, *Zlm;      // spherical harmonics coefficients (l,m space): complex numbers.
+  std::complex<real> *Yr;                // real space : r
+  std::complex<real> *Stheta, *Sphi;                // real space : theta,phi
+  std::complex<real> *Ttheta, *Tphi;                // real space : theta,phi
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -258,25 +283,26 @@ void Vsh::GenerateCellGhostVsh() {
   shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
 
   NLM = shtns->nlm;
-  Yr = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Tphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Ttheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Sphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Stheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
+  Yr = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Sphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Stheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Ylm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
+  Zlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; )
+      LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
       Ylm[LM(shtns,l,m)] = 1.0;
       Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      SH_to_spat(shtns,Ylm,Yr);
-      SHsph_to_spat(shtns,Slm,Stheta,Sphi);
-      SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
+      SH_to_spat_cplx(shtns,Ylm,Yr);
+      SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
+      SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
 
       if (koffset==0) {
         for(int k = 0; k < kghost; k++) {
@@ -343,6 +369,7 @@ void Vsh::GenerateCellGhostVsh() {
   shtns_free(Sphi);
   shtns_free(Stheta);
   shtns_free(Ylm);
+  shtns_free(Zlm);
   shtns_free(Tlm);
   shtns_free(Slm);
   shtns_destroy(shtns);
@@ -351,9 +378,9 @@ void Vsh::GenerateCellGhostVsh() {
 void Vsh::GenerateInterfaceGhostVsh() {
   shtns_cfg shtns;                // handle to a sht transform configuration
   int NLM;
-  std::complex<real> *Slm, *Tlm;      // spherical harmonics coefficients (l,m space): complex numbers.
-  real *Stheta, *Sphi;                // real space : theta,phi
-  real *Ttheta, *Tphi;                // real space : theta,phi
+  std::complex<real> *Slm, *Tlm, *Zlm;      // spherical harmonics coefficients (l,m space): complex numbers.
+  std::complex<real> *Stheta, *Sphi;                // real space : theta,phi
+  std::complex<real> *Ttheta, *Tphi;                // real space : theta,phi
 
   const int mres = 1;             // periodicity in phi (1 for full-sphere, 2 for half the sphere, 3 for 1/3, etc...)
 
@@ -364,20 +391,21 @@ void Vsh::GenerateInterfaceGhostVsh() {
   shtns = shtns_init( sht_reg_poles, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
 
   NLM = shtns->nlm;
-  Tphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Ttheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Sphi = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
-  Stheta = (real *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(real));
+  Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Sphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
+  Stheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
+  Zlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; )
+      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
       Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
       Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      SHsph_to_spat(shtns,Slm,Stheta,Sphi);
-      SHtor_to_spat(shtns,Tlm,Ttheta,Tphi);
+      SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
+      SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
 
       if (koffset==0) {
         for(int k = 0; k < kghost; k++) {
@@ -445,19 +473,19 @@ void Vsh::GenerateInterfaceGhostVsh() {
   shtns_destroy(shtns);
 }
 
-void Vsh::write_vect(std::string fn, double *vec, int N)
+void Vsh::write_vect(std::string fn, std::complex<real> *vec, int N)
 {
         FILE *fp;
         int i;
 
         fp = fopen(fn.c_str(),"w");
         for (i=0;i<N;i++) {
-                fprintf(fp,"%.6g ",vec[i]);
+                fprintf(fp,"%.6g ",vec[i].real());
         }
         fclose(fp);
 }
 
-void Vsh::write_mx(std::string fn, double *mx, int N1, int N2)
+void Vsh::write_mx(std::string fn, std::complex<real> *mx, int N1, int N2)
 {
         FILE *fp;
         int i,j;
@@ -466,7 +494,7 @@ void Vsh::write_mx(std::string fn, double *mx, int N1, int N2)
         fp = fopen(fn.c_str(),"w");
         for (i=0;i<N1;i++) {
                 for(j=0;j<N2;j++) {
-                        fprintf(fp,"%.6g ",mx[i*N2+j]);
+                        fprintf(fp,"%.6g ",mx[i*N2+j].real());
                 }
                 fprintf(fp,"\n");
         }

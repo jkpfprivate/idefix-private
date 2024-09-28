@@ -157,15 +157,15 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
     // Allocate required arrays
     this->jl = IdefixArray2D<real>("jl", lmax, this->np_tot[IDIR]);
     this->jls = IdefixArray2D<real>("jls", lmax, this->np_tot[IDIR]);
-    this->Ylm_r = IdefixArray4D<real> ("Ylm_r", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Slm_th = IdefixArray4D<real> ("Slm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Slm_phi = IdefixArray4D<real> ("Slm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Tlm_th = IdefixArray4D<real> ("Tlm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Tlm_phi = IdefixArray4D<real> ("Tlm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Slm_ths = IdefixArray4D<real> ("Slm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Slm_phis = IdefixArray4D<real> ("Slm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Tlm_ths = IdefixArray4D<real> ("Tlm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
-    this->Tlm_phis = IdefixArray4D<real> ("Tlm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Ylm_r = IdefixArray4D<Kokkos::complex<real>> ("Ylm_r", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_th = IdefixArray4D<Kokkos::complex<real>> ("Slm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_phi = IdefixArray4D<Kokkos::complex<real>> ("Slm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_th = IdefixArray4D<Kokkos::complex<real>> ("Tlm_th", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_phi = IdefixArray4D<Kokkos::complex<real>> ("Tlm_phi", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_ths = IdefixArray4D<Kokkos::complex<real>> ("Slm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Slm_phis = IdefixArray4D<Kokkos::complex<real>> ("Slm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_ths = IdefixArray4D<Kokkos::complex<real>> ("Tlm_ths", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
+    this->Tlm_phis = IdefixArray4D<Kokkos::complex<real>> ("Tlm_phis", lmax, mmax, this->np_tot[KDIR], this->np_tot[JDIR]);
   #endif // VSH == YES
 
   // Initialise dust grains if needed

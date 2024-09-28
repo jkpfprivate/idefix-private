@@ -47,15 +47,15 @@ class Vsh {
     IdefixArray2D<real>::HostMirror jl; // spherical bessel function
     IdefixArray2D<real>::HostMirror jls; // spherical bessel function at interface
     // WARNING: with shtns, Tlm equals -Tlm definition from wiki. See SHTNS website
-    IdefixArray4D<real>::HostMirror Ylm_r;
-    IdefixArray4D<real>::HostMirror Slm_th;
-    IdefixArray4D<real>::HostMirror Slm_phi;
-    IdefixArray4D<real>::HostMirror Tlm_th;
-    IdefixArray4D<real>::HostMirror Tlm_phi;
-    IdefixArray4D<real>::HostMirror Slm_ths;
-    IdefixArray4D<real>::HostMirror Slm_phis;
-    IdefixArray4D<real>::HostMirror Tlm_ths;
-    IdefixArray4D<real>::HostMirror Tlm_phis;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Ylm_r;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Slm_th;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Slm_phi;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Tlm_th;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Tlm_phi;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Slm_ths;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Slm_phis;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Tlm_ths;
+    IdefixArray4D<Kokkos::complex<real>>::HostMirror Tlm_phis;
 
     void ShowConfig();
     void Generatejl();
@@ -67,7 +67,7 @@ class Vsh {
   private:
     int write;
 
-    void write_vect(std::string, double *, int);
-    void write_mx(std::string, double *, int, int);
+    void write_vect(std::string, std::complex<real>*, int);
+    void write_mx(std::string, std::complex<real>*, int, int);
 };
 #endif // VSH_VSH_HPP_
