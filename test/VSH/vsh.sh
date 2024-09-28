@@ -18,9 +18,9 @@ do
   for (( m=0; m<=$l; m++ ))
   do
     echo "Hi $l$m"
-    sed -i "67s/.*/d.Vc(VX1,k,j,i) = d.Ylm_r("$l","$m",k,j);/"    setup.cpp
-    sed -i "68s/.*/d.Vc(VX2,k,j,i) = d.Slm_th("$l","$m",k,j);/"   setup.cpp
-    sed -i "69s/.*/d.Vc(VX3,k,j,i) = d.Slm_phi("$l","$m",k,j);/"  setup.cpp
+    sed -i "67s/.*/d.Vc(VX1,k,j,i) = d.Ylm_r("$l","$m",k,j).real();/"    setuptest.cpp
+    sed -i "68s/.*/d.Vc(VX2,k,j,i) = d.Slm_th("$l","$m",k,j).real();/"   setuptest.cpp
+    sed -i "69s/.*/d.Vc(VX3,k,j,i) = d.Slm_phi("$l","$m",k,j).real();/"  setuptest.cpp
     make -j 8
     ./idefix
     cp data.0000.vtk "data.0000.Sl"$l"m"$m".vtk"
@@ -30,8 +30,8 @@ do
     mv sliceplot_nofcb/RAD_MOLL_VX2_000.png "sliceplot_nofcb/MOLL_Slm"$l$m"_th.png"
     mv sliceplot_nofcb/RAD_MOLL_VX3_000.png "sliceplot_nofcb/MOLL_Slm"$l$m"_phi.png"
     cd ..
-    sed -i "68s/.*/d.Vc(VX2,k,j,i) = d.Tlm_th("$l","$m",k,j);/"   setup.cpp
-    sed -i "69s/.*/d.Vc(VX3,k,j,i) = d.Tlm_phi("$l","$m",k,j);/"  setup.cpp
+    sed -i "68s/.*/d.Vc(VX2,k,j,i) = d.Tlm_th("$l","$m",k,j).real();/"   setuptest.cpp
+    sed -i "69s/.*/d.Vc(VX3,k,j,i) = d.Tlm_phi("$l","$m",k,j).real();/"  setuptest.cpp
     make -j 8
     ./idefix
     cp data.0000.vtk "data.0000.Tlm"$l$m".vtk"

@@ -40,12 +40,7 @@ Vsh::Vsh(DataBlockHost *datain, int write) {
   this->x1l = datain->xl[IDIR];
 
   this->lmax = datain->lmax;
-//  #if DIMENSIONS == 3
-//    this->mmax = datain->mmax;
-//  #else
-//    this->mmax = 1;
-//  #endif //DIMENSIONS == 3
-  this->mmax = datain->lmax;
+  this->mmax = datain->lmax; //for some reason SHTNS needs mmax=lmax for working with complex transforms
 
   this->write = write;
 
@@ -105,8 +100,7 @@ void Vsh::GenerateCellVsh() {
   shtns_verbose(verbose);                       // displays informations during initialization.
   shtns_use_threads(0);           // enable multi-threaded transforms (if supported).
 //  shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
-  shtns = shtns_init( sht_reg_fast, lmax, lmax, mres, ntheta, nphi_shtns );
-//  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
+  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
   //**** Default normalisation is SHTNS orthonormalized i.e. C_m Y_lm_ortho with C_m = 2 if m!=0 and 1 otherwise.
   //**** Default norm of SHTNS S/T_lm is sqrt(l(l_1)), so we divide by this quantity.
 
@@ -121,10 +115,6 @@ void Vsh::GenerateCellVsh() {
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Zlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
-      int kbeg = (koffset==0) ? kghost : 0;
-      int jbeg = (joffset==0) ? jghost : 0;
-      int kend = (koffset+nphi_proc-kghost>=nphi) ? nphi_proc+kghost : nphi_proc+2*kghost;
-      int jend = (joffset+ntheta_proc-jghost>=ntheta) ? ntheta_proc+jghost : ntheta_proc+2*jghost;
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < std::min(this->mmax, l+1); m++) {
@@ -133,18 +123,6 @@ void Vsh::GenerateCellVsh() {
       Slm[LM_cplx(shtns,l,m)] = 2.0/sqrt_ll;
       Tlm[LM_cplx(shtns,l,m)] = 2.0/sqrt_ll;
       SH_to_spat_cplx(shtns,Ylm,Yr);
-//      LM_LOOP_CPLX(shtns, std::cout << Ylm[lm] << std::endl;)
-      for(int t = 0; t < 10; t++) {
-//std::cout << Yr[t] << std::endl;
-      }
-//      for(int k = kbeg; k < kend; k++) {
-//        for(int j = jbeg; j < jend; j++) {
-//          std::complex<real> current_cplx = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
-//          this->Ylm_r(l,m,k,j).real() = current_cplx.real();
-//          this->Ylm_r(l,m,k,j).imag() = current_cplx.imag();
-//std::cout << Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)] << std::endl;
-//        }
-//      }
       SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
       SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
       if (write==1 and idfx::prank==0) {
@@ -152,30 +130,26 @@ void Vsh::GenerateCellVsh() {
         path = "datavsh/Yr"+std::to_string(l)+std::to_string(m);
         std::cout << path << std::endl;
         this->write_mx(path,Yr,nphi_shtns,ntheta);
-//        path = "datavsh/Stheta"+std::to_string(l)+std::to_string(m);
-//        std::cout << path << std::endl;
-//        this->write_mx(path,Stheta,nphi_shtns,ntheta);
-//        path = "datavsh/Sphi"+std::to_string(l)+std::to_string(m);
-//        std::cout << path << std::endl;
-//        this->write_mx(path,Sphi,nphi_shtns,ntheta);
-//        path = "datavsh/Ttheta"+std::to_string(l)+std::to_string(m);
-//        std::cout << path << std::endl;
-//        this->write_mx(path,Ttheta,nphi_shtns,ntheta);
-//        path = "datavsh/Tphi"+std::to_string(l)+std::to_string(m);
-//        std::cout << path << std::endl;
-//        this->write_mx(path,Tphi,nphi_shtns,ntheta);
+        path = "datavsh/Stheta"+std::to_string(l)+std::to_string(m);
+        std::cout << path << std::endl;
+        this->write_mx(path,Stheta,nphi_shtns,ntheta);
+        path = "datavsh/Sphi"+std::to_string(l)+std::to_string(m);
+        std::cout << path << std::endl;
+        this->write_mx(path,Sphi,nphi_shtns,ntheta);
+        path = "datavsh/Ttheta"+std::to_string(l)+std::to_string(m);
+        std::cout << path << std::endl;
+        this->write_mx(path,Ttheta,nphi_shtns,ntheta);
+        path = "datavsh/Tphi"+std::to_string(l)+std::to_string(m);
+        std::cout << path << std::endl;
+        this->write_mx(path,Tphi,nphi_shtns,ntheta);
       }
 
+      int kbeg = (koffset==0) ? kghost : 0;
+      int jbeg = (joffset==0) ? jghost : 0;
+      int kend = (koffset+nphi_proc-kghost>=nphi) ? nphi_proc+kghost : nphi_proc+2*kghost;
+      int jend = (joffset+ntheta_proc-jghost>=ntheta) ? ntheta_proc+jghost : ntheta_proc+2*jghost;
       for(int k = kbeg; k < kend; k++) {
         for(int j = jbeg; j < jend; j++) {
-//          std::complex<real> current_cplx = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
-//          this->Ylm_r(l,m,k,j).real() = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)].real();
-//          this->Ylm_r(l,m,k,j).real() = current_cplx.real();
-//          this->Ylm_r(l,m,k,j).imag() = current_cplx.imag();
-//std::cout << Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)] << std::endl;
-//std::cout << current_cplx.real() << std::endl;
-//std::cout << Ylm[LM_cplx(shtns,l,m)] << std::endl;
-//std::cout << l << m << std::endl;
           this->Ylm_r(l,m,k,j) = Yr[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
           this->Slm_th(l,m,k,j) = Stheta[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
           this->Slm_phi(l,m,k,j) = Sphi[(2*(k+koffset-kghost)+1)*ntheta+(j+joffset-jghost)];
@@ -193,6 +167,7 @@ void Vsh::GenerateCellVsh() {
   shtns_free(Ylm);
   shtns_free(Tlm);
   shtns_free(Slm);
+  shtns_free(Zlm);
   shtns_destroy(shtns);
 }
 
@@ -219,13 +194,14 @@ void Vsh::GenerateInterfaceVsh() {
   Stheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Slm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
   Tlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
+  Zlm = (std::complex<real> *) shtns_malloc( NLM * sizeof(std::complex<real>));
 
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
-      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      LM_LOOP_CPLX(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
+      Slm[LM(shtns,l,m)] = 2.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 2.0/sqrt_ll;
       SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
       SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
       if (write==1 & idfx::prank==0) {
@@ -261,6 +237,7 @@ void Vsh::GenerateInterfaceVsh() {
   shtns_free(Ttheta);
   shtns_free(Sphi);
   shtns_free(Stheta);
+  shtns_free(Zlm);
   shtns_free(Tlm);
   shtns_free(Slm);
   shtns_destroy(shtns);
@@ -282,7 +259,7 @@ void Vsh::GenerateCellGhostVsh() {
 //  shtns = shtns_init( sht_gauss, lmax, mmax, mres, ntheta, nphi );
   shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta, nphi_shtns );
 
-  NLM = shtns->nlm;
+  NLM = shtns->nlm_cplx;
   Yr = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
@@ -296,10 +273,10 @@ void Vsh::GenerateCellGhostVsh() {
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
-      Ylm[LM(shtns,l,m)] = 1.0;
-      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      LM_LOOP_CPLX(shtns,  Ylm[lm]=0.0; Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
+      Ylm[LM(shtns,l,m)] = 2.0;
+      Slm[LM(shtns,l,m)] = 2.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 2.0/sqrt_ll;
       SH_to_spat_cplx(shtns,Ylm,Yr);
       SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
       SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
@@ -390,7 +367,7 @@ void Vsh::GenerateInterfaceGhostVsh() {
 //  shtns = shtns_init( sht_reg_fast, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
   shtns = shtns_init( sht_reg_poles, lmax, mmax, mres, ntheta_shtns, nphi_shtns );
 
-  NLM = shtns->nlm;
+  NLM = shtns->nlm_cplx;
   Tphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Ttheta = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
   Sphi = (std::complex<real> *) shtns_malloc( NSPAT_ALLOC(shtns) * sizeof(std::complex<real>));
@@ -401,9 +378,9 @@ void Vsh::GenerateInterfaceGhostVsh() {
   for(int l = 0; l < this->lmax; l++) {
     real sqrt_ll = (l != 0) ? sqrt((real) l*(l+1)) : 1.;
     for(int m = 0; m < this->mmax; m++) {
-      LM_LOOP(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
-      Slm[LM(shtns,l,m)] = 1.0/sqrt_ll;
-      Tlm[LM(shtns,l,m)] = 1.0/sqrt_ll;
+      LM_LOOP_CPLX(shtns, Slm[lm]=0.0;  Tlm[lm] = 0.0; Zlm[lm] = 0.0; )
+      Slm[LM(shtns,l,m)] = 2.0/sqrt_ll;
+      Tlm[LM(shtns,l,m)] = 2.0/sqrt_ll;
       SHsphtor_to_spat_cplx(shtns,Slm,Zlm,Stheta,Sphi);
       SHsphtor_to_spat_cplx(shtns,Zlm,Tlm,Ttheta,Tphi);
 
@@ -468,6 +445,7 @@ void Vsh::GenerateInterfaceGhostVsh() {
   shtns_free(Ttheta);
   shtns_free(Sphi);
   shtns_free(Stheta);
+  shtns_free(Zlm);
   shtns_free(Tlm);
   shtns_free(Slm);
   shtns_destroy(shtns);
@@ -500,3 +478,4 @@ void Vsh::write_mx(std::string fn, std::complex<real> *mx, int N1, int N2)
         }
         fclose(fp);
 }
+#undef LM_LOOP_CPLX

@@ -64,9 +64,9 @@ void Setup::InitFlow(DataBlock &data) {
 
 
 
-d.Vc(VX1,k,j,i) = amp*d.Ylm_r(2,0,k,j);
-d.Vc(VX2,k,j,i) = amp*d.Slm_th(2,0,k,j);
-d.Vc(VX3,k,j,i) = amp*d.Slm_phi(2,0,k,j);
+d.Vc(VX1,k,j,i) = d.Ylm_r(3,3,k,j).real();
+d.Vc(VX2,k,j,i) = d.Tlm_th(3,3,k,j).real();
+d.Vc(VX3,k,j,i) = d.Tlm_phi(3,3,k,j).real();
 
 //          d.Vs(BX1s,k,j,i) = ZERO_F;
 //          d.Vs(BX2s,k,j,i) = amp*d.vsh->Tlm_ths(2,2,k,j);
