@@ -16,7 +16,6 @@
 #define VSH_VSH_HPP_
 
 #include "idefix.hpp"
-//#include "input.hpp"
 #include "shtns.h"
 
 class DataBlockHost;

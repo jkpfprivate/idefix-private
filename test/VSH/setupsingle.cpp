@@ -30,9 +30,9 @@ void Setup::InitFlow(DataBlock &data) {
 //        d.Vc(VX1,k,j,i) = data.Ylm_r(2,2,k,j);
 //        d.Vc(VX2,k,j,i) = data.Tlm_th(1,1,k,j);
 //        d.Vc(VX3,k,j,i) = data.Tlm_phi(1,1,k,j);
-        d.Vc(VX1,k,j,i) = d.Ylm_r(2,2,k,j);
-        d.Vc(VX2,k,j,i) = d.Tlm_th(1,1,k,j);
-        d.Vc(VX3,k,j,i) = d.Tlm_phi(1,1,k,j);
+        d.Vc(VX1,k,j,i) = d.Ylm_r(2,2,k,j).real();
+        d.Vc(VX2,k,j,i) = d.Tlm_th(1,1,k,j).real();
+        d.Vc(VX3,k,j,i) = d.Tlm_phi(1,1,k,j).real();
         if (FABS(d.Vc(VX3,k,j,i) - sqrt(2.*3./(8.*M_PI))*COS(x2)*COS(x3)) > 1e-6) {
           countphi ++;
         }
