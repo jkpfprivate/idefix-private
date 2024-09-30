@@ -38,6 +38,8 @@ private:
 public:
     IdefixArray2D<Kokkos::complex<real>> ouValues;
     IdefixHostArray2D<Kokkos::complex<real>> ouValuesHost;
+    IdefixArray2D<real> ouValuesMod;
+    IdefixArray2D<real> ouValuesArg;
     IdefixArray2D<real> normalValues;
     IdefixHostArray2D<real> normalValuesHost;
 
