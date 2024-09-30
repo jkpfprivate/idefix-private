@@ -49,7 +49,7 @@ public:
 
     std::string ouFilename;
     std::string normalFilename;
-    void ResetProcessesValues();
+    void ResetProcessesValues(std::vector<std::vector<std::string>>);
     void WriteProcessesValues(real);
     void ResetNormalValues();
     void WriteNormalValues(real);

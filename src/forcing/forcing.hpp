@@ -37,6 +37,8 @@ class Forcing {
       IdefixArray4D<Kokkos::complex<real>> forcingModesKdir;
     #endif //COMPONENTS == 3
   #endif //COMPONENTS >= 2
+//  IdefixHostArray2D<std::string> modeNamesHost;
+  std::vector<std::vector<std::string>> modeNames;
   // Forcing term
   IdefixArray4D<real> forcingTerm;
   OrnsteinUhlenbeckProcesses oUprocesses;
@@ -62,8 +64,8 @@ class Forcing {
   IdefixHostArray2D<real> k3DisoHost;
   IdefixArray2D<real> k2Diso;
   IdefixHostArray2D<real> k2DisoHost;
-  IdefixArray2D<real> ellmVsh;
-  IdefixHostArray2D<real> ellmVshHost;
+  IdefixArray2D<int> ellmVsh;
+  IdefixHostArray2D<int> ellmVshHost;
   real kmin;
   real kmax;
   int ellmin;
