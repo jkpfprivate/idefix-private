@@ -83,14 +83,14 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   });
 }
 
-void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
+void OrnsteinUhlenbeckProcesses::ResetProcessesValues(std::vector<std::vector<std::string>> names) {
   if(idfx::prank==0) {
     file.open(ouFilename, std::ios::trunc);
-    int col_width = precision + 10;
-    file << std::setw(col_width) << "t";
+    int col_width = 3*precision + 10;
+    file << "t";
     for (int l=0; l<nSeries; l++) {
       for (int dir=0; dir<COMPONENTS; dir++) {
-        std::string current_name = std::to_string(l) + std::to_string(dir);
+        std::string current_name = names[l][dir];
         file << std::setw(col_width) << current_name;
       }
     }
@@ -101,15 +101,15 @@ void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
 
 void OrnsteinUhlenbeckProcesses::WriteProcessesValues(real time) {
   if(idfx::prank==0) {
-    int col_width = precision + 10;
+    int col_width = 3*precision + 10;
     file.open(ouFilename, std::ios::app);
     file.precision(precision);
-    this->file << std::scientific << std::setw(col_width) << time;
+    this->file << std::scientific << time;
     Kokkos::deep_copy(ouValuesHost, ouValues);
     for (int l=0; l<nSeries; l++) {
       for (int dir=0; dir<COMPONENTS; dir++) {
-        real mod = std::sqrt(pow(ouValuesHost(l,dir).real(), 2) + pow(ouValuesHost(l,dir).imag(), 2));
-        file << std::scientific << std::setw(col_width) << mod;
+//        file << std::scientific << std::setw(col_width) << ouValuesHost(l,dir);
+        file << std::scientific << std::setw(col_width) << ouValuesHost(l,dir).real() << '+' << ouValuesHost(l,dir).imag() << 'j';
       }
     }
     file << std::endl;

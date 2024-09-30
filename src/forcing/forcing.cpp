@@ -60,6 +60,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
           if (k_2 >= kmin*kmin and k_2 <= kmax*kmax) {
             nForcingModes ++;
             k3Disovec.push_back({kx, ky, kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz)});
           }
         }
       }
@@ -82,14 +83,17 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   else if (input.CheckEntry("Forcing", "2Diso")>=0) {
     this->forcingType = iso2D;
-    this->normal2Diso = input.Get<int>("Forcing","3Diso", 0);
-    if (normal2Diso < 0 or normal2Diso > 2) IDEFIX_ERROR("The normal component for 2D isotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
+    std::string normal2DisoStr = input.Get<std::string>("Forcing","2Diso", 0);
+    if (normal2DisoStr == "IDIR") this->normal2Diso = IDIR;
+    else if (normal2DisoStr == "JDIR") this->normal2Diso = JDIR;
+    else if (normal2DisoStr == "KDIR") this->normal2Diso = KDIR;
+    else IDEFIX_ERROR("The normal component for 2D isotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
     #if COMPONENTS < 2 or DIMENSIONS < 2
       IDEFIX_ERROR("You cannot have 2D isotropic forcing with less than 2 components and dimensions.");
     #endif //COMPONENTS < 3 or DIMENSIONS < 3
 
-    this->kmin = input.Get<int>("Forcing","3Diso", 1);
-    this->kmax = input.Get<int>("Forcing","3Diso", 2);
+    this->kmin = input.Get<int>("Forcing","2Diso", 1);
+    this->kmax = input.Get<int>("Forcing","2Diso", 2);
 
     std::vector<std::vector<real>> k2Disovec;
 
@@ -109,6 +113,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
           if (k_2 >= kmin*kmin and k_2 <= kmax*kmax) {
             nForcingModes ++;
             k2Disovec.push_back({kx, ky, kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz)});
           }
         }
       }
@@ -147,10 +152,11 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       for (int m=mmin; m<mmax & m<ell+1 ; m++) {
         this->nForcingModes++;
         ellmVshvec.push_back({ell,m});
+        modeNames.push_back({"Y" + std::to_string(ell) + std::to_string(m), "S" + std::to_string(ell) + std::to_string(m), "T" + std::to_string(ell) + std::to_string(m)});
       }
     }
-    ellmVshHost = IdefixHostArray2D<real>("ellmVshHost", nForcingModes, 2);
-    ellmVsh = IdefixArray2D<real>("ellmVsh", nForcingModes, 2);
+    ellmVshHost = IdefixHostArray2D<int>("ellmVshHost", nForcingModes, 2);
+    ellmVsh = IdefixArray2D<int>("ellmVsh", nForcingModes, 2);
     for (int l=0; l<nForcingModes; l++) {
       ellmVshHost(l,0) = ellmVshvec[l][0];
       ellmVshHost(l,1) = ellmVshvec[l][1];
@@ -185,7 +191,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     for (int dir=IDIR; dir<COMPONENTS; dir++) {
       mean(l,dir) = ZERO_F;
       tcorr(l,dir) = 1.;
-      epsilon(l,dir) = 1e-1;
+      epsilon(l,dir) = 1e-2;
     }
   }
   Kokkos::deep_copy(this->means, mean);
@@ -201,11 +207,11 @@ void Forcing::ShowConfig() {
   switch(forcingType) {
     case ForcingType::iso3D:
       idfx::cout << "Forcing: 3D isotropic." << std::endl;
-      idfx::cout << "Forcing: kmin=" << kmin << " and kmax" << kmax << " ." << std::endl;
+      idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       break;
     case ForcingType::iso2D:
       idfx::cout << "Forcing: 2D isotropic with normal." << normal2Diso << "." << std::endl;
-      idfx::cout << "Forcing: kmin=" << kmin << " and kmax" << kmax << " ." << std::endl;
+      idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       break;
     case ForcingType::vsh:
       idfx::cout << "Forcing: vector spherical harmonics." << std::endl;
@@ -233,7 +239,7 @@ void Forcing::InitForcingModes() {
   IdefixArray1D<real> x3 = data->x[KDIR];
   IdefixArray2D<real> k3Diso = this->k3Diso;
   IdefixArray2D<real> k2Diso = this->k2Diso;
-  IdefixArray2D<real> ellmVsh = this->ellmVsh;
+  IdefixArray2D<int> ellmVsh = this->ellmVsh;
   Kokkos::complex unit_j(0.,1.);
   int nForcingModes = this->nForcingModes;
   ForcingType forcingType = this->forcingType;
@@ -289,12 +295,12 @@ void Forcing::InitForcingModes() {
         IdefixArray4D<Kokkos::complex<real>> Tlm_th = this->data->Tlm_th;
         IdefixArray4D<Kokkos::complex<real>> Tlm_phi = this->data->Tlm_phi;
         int nForcingModes = this->nForcingModes;
-        idefix_for("ComputeForcing", 0, nForcingModes,
-                    KOKKOS_LAMBDA (int l) {
-                      int ell = ellmVsh(l, 0);
-                      int m = ellmVsh(l, 1);
-                  printf("%d, %d\n", ell, m);
-        });
+//        idefix_for("ComputeForcing", 0, nForcingModes,
+//                    KOKKOS_LAMBDA (int l) {
+//                      int ell = ellmVsh(l, 0);
+//                      int m = ellmVsh(l, 1);
+//                  printf("%d, %d\n", ell, m);
+//        });
 //IDEFIX_ERROR("STOP");
         idefix_for("ComputeForcing", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
                     KOKKOS_LAMBDA (int l, int k, int j, int i) {
