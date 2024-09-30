@@ -171,19 +171,7 @@ DataBlock::DataBlock(Grid &grid, Input &input) {
 
   // Initialise forcing if needed
   if(input.CheckBlock("Forcing")) {
-//    #if GEOMETRY == SPHERICAL
-//      #if VSH == NO
-//        IDEFIX_ERROR("Forcing module in spherical geometry requires the Idefix_VSH option to be ON");
-//      #endif // VSH == NO
-//    #endif // GEOMETRY == SPHERICAL
-//    this->forcing = std::make_unique<Forcing>(input, this);
-//    #if GEOMETRY == SPHERICAL
-//      #if VSH == YES
-//        if (this->forcing->lmax > this->lmax || forcing->mmax > this->mmax) {
-//          IDEFIX_ERROR("lmax and mmax used by the Forcing module should not be greater than those used by the Vsh class");
-//        }
-//      #endif // VSH == YES
-//    #endif // GEOMETRY == SPHERICAL
+    this->forcing = std::make_unique<Forcing>(input, this);
     this->haveForcing = true;
   }
 

@@ -29,7 +29,7 @@ class Forcing {
   void ShowConfig();                ///< Show the forcing configuration
 
   // Forcing modes
-  IdefixArray4D<Kokkos::complex<real>> forcingModes;
+//  IdefixArray4D<Kokkos::complex<real>> forcingModes;
   IdefixArray4D<Kokkos::complex<real>> forcingModesIdir;
   #if COMPONENTS >= 2
     IdefixArray4D<Kokkos::complex<real>> forcingModesJdir;
