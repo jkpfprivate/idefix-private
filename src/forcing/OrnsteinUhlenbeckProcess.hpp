@@ -27,6 +27,7 @@
 
 class OrnsteinUhlenbeckProcesses {
 private:
+    std::vector<std::vector<std::string>> names;
     int nSeries;
 
     IdefixArray2D<real> means;
@@ -38,18 +39,18 @@ private:
 public:
     IdefixArray2D<Kokkos::complex<real>> ouValues;
     IdefixHostArray2D<Kokkos::complex<real>> ouValuesHost;
-    IdefixArray2D<real> ouValuesMod;
-    IdefixArray2D<real> ouValuesArg;
-    IdefixArray2D<real> normalValues;
-    IdefixHostArray2D<real> normalValuesHost;
+    IdefixArray2D<real> normalValuesReal;
+    IdefixArray2D<real> normalValuesImag;
+    IdefixHostArray2D<real> normalValuesRealHost;
+    IdefixHostArray2D<real> normalValuesImagHost;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-    void InitProcesses(std::string, int, int, IdefixArray2D<real>, IdefixArray2D<real>, IdefixArray2D<real>);
+    void InitProcesses(std::string, int, int, std::vector<std::vector<std::string>> modeNames, IdefixArray2D<real>, IdefixArray2D<real>, IdefixArray2D<real>);
     void UpdateProcessesValues(real);
 
     std::string ouFilename;
     std::string normalFilename;
-    void ResetProcessesValues(std::vector<std::vector<std::string>>);
+    void ResetProcessesValues();
     void WriteProcessesValues(real);
     void ResetNormalValues();
     void WriteNormalValues(real);

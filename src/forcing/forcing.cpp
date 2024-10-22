@@ -31,7 +31,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 //  real [maybe_unused] kx0, ky0, kz0;
   real kx0, ky0, kz0;
 
-  if (input.CheckEntry("Forcing", "3Diso")>=0) {
+  if (input.CheckEntry("Forcing", "iso3D")>=0) {
     this->forcingType = iso3D;
     #if GEOMETRY != CARTESIAN
       IDEFIX_ERROR("You cannot have 3D isotropic forcing in another geometry than Cartesian");
@@ -39,8 +39,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     #if COMPONENTS < 3 or DIMENSIONS < 3
       IDEFIX_ERROR("You cannot have 3D isotropic forcing with less than 3 components and dimensions.");
     #endif //COMPONENTS < 3 or DIMENSIONS < 3
-    this->kmin = input.Get<real>("Forcing","3Diso", 0);
-    this->kmax = input.Get<real>("Forcing","3Diso", 1);
+// if () IDEFIX_ERROR("You should not have 3D isotropic forcing with other boundary conditions than fully periodic.");
+    this->kmin = input.Get<real>("Forcing","iso3D", 0);
+    this->kmax = input.Get<real>("Forcing","iso3D", 1);
 
     std::vector<std::vector<real>> k3Disovec;
 
@@ -81,25 +82,25 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
                               data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   }
 
-  else if (input.CheckEntry("Forcing", "2Diso")>=0) {
+  else if (input.CheckEntry("Forcing", "iso2D")>=0) {
     this->forcingType = iso2D;
-    std::string normal2DisoStr = input.Get<std::string>("Forcing","2Diso", 0);
-    if (normal2DisoStr == "IDIR") this->normal2Diso = IDIR;
-    else if (normal2DisoStr == "JDIR") this->normal2Diso = JDIR;
-    else if (normal2DisoStr == "KDIR") this->normal2Diso = KDIR;
+    this->normal2DisoStr = input.Get<std::string>("Forcing","iso2D", 0);
+    if (this->normal2DisoStr == "IDIR") this->normal2Diso = IDIR;
+    else if (this->normal2DisoStr == "JDIR") this->normal2Diso = JDIR;
+    else if (this->normal2DisoStr == "KDIR") this->normal2Diso = KDIR;
     else IDEFIX_ERROR("The normal component for 2D isotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
     #if COMPONENTS < 2 or DIMENSIONS < 2
       IDEFIX_ERROR("You cannot have 2D isotropic forcing with less than 2 components and dimensions.");
-    #endif //COMPONENTS < 3 or DIMENSIONS < 3
+    #endif //COMPONENTS < 2 or DIMENSIONS < 2
 
-    this->kmin = input.Get<int>("Forcing","2Diso", 1);
-    this->kmax = input.Get<int>("Forcing","2Diso", 2);
+    this->kmin = input.Get<real>("Forcing","iso2D", 1);
+    this->kmax = input.Get<real>("Forcing","iso2D", 2);
 
     std::vector<std::vector<real>> k2Disovec;
 
-    kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
-    ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
-    kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
+    kx0 = (this->normal2Diso==IDIR) ? ZERO_F : 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
+    ky0 = (this->normal2Diso==JDIR) ? ZERO_F : 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
+    kz0 = (this->normal2Diso==KDIR) ? ZERO_F : 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
     int nxmax = (this->normal2Diso==IDIR) ? 1 : kmax/kx0 + 1;
     int nymax = (this->normal2Diso==JDIR) ? 1 : kmax/ky0 + 1;
     int nzmax = (this->normal2Diso==KDIR) ? 1 : kmax/kz0 + 1;
@@ -142,6 +143,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     #if VSH == NO
       IDEFIX_ERROR("You cannot have vsh forcing without the VSH module.");
     #endif //VSH == NO
+// if () IDEFIX_ERROR("You cannot have vsh forcing without the full sphere.");
     this->ellmin = input.Get<int>("Forcing","vsh", 0);
     this->ellmax = input.Get<int>("Forcing","vsh", 1);
     this->mmin = input.GetOrSet<int>("Forcing","vsh", 2, 0);
@@ -174,7 +176,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   }
 
 //  else { this->haveUserDef = true;}
-  else { this->forcingType = userDef;}
+  else { this->forcingType = userDef;} // TO BE CODED THOUGH
 
   // Allocate required arrays
   this->forcingTerm = IdefixArray4D<real>("ForcingTerm", COMPONENTS,
@@ -190,14 +192,14 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   for (int l=0; l<nForcingModes; l++) {
     for (int dir=IDIR; dir<COMPONENTS; dir++) {
       mean(l,dir) = ZERO_F;
-      tcorr(l,dir) = 1.;
-      epsilon(l,dir) = 1e-2;
+      tcorr(l,dir) = input.Get<real>("Forcing", "t_corr", 0);
+      epsilon(l,dir) = input.Get<real>("Forcing", "epsilon", 0);
     }
   }
   Kokkos::deep_copy(this->means, mean);
   Kokkos::deep_copy(this->tcorrs, tcorr);
   Kokkos::deep_copy(this->epsilons, epsilon);
-  this->oUprocesses.InitProcesses(folder, this->seed, this->nForcingModes, this->means, this->tcorrs, this->epsilons);
+  this->oUprocesses.InitProcesses(folder, this->seed, this->nForcingModes, this->modeNames, this->means, this->tcorrs, this->epsilons);
 
   idfx::popRegion();
 }
@@ -210,7 +212,7 @@ void Forcing::ShowConfig() {
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       break;
     case ForcingType::iso2D:
-      idfx::cout << "Forcing: 2D isotropic with normal." << normal2Diso << "." << std::endl;
+      idfx::cout << "Forcing: 2D isotropic with normal " << normal2DisoStr << "." << std::endl;
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       break;
     case ForcingType::vsh:
@@ -265,9 +267,9 @@ void Forcing::InitForcingModes() {
                     real kx = k3Diso(l, IDIR);
                     real ky = k3Diso(l, JDIR);
                     real kz = k3Diso(l, KDIR);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
-                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
-                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
+                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
       });
 //      Kokkos::deep_copy(forcingModesIdir, forcingModes);
 //      Kokkos::deep_copy(forcingModesJdir, forcingModes);
@@ -279,9 +281,9 @@ void Forcing::InitForcingModes() {
                     real kx = k2Diso(l, IDIR);
                     real ky = k2Diso(l, JDIR);
                     real kz = k2Diso(l, KDIR);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
-                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
-                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + ky*x3(k)));
+                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
       });
 //      Kokkos::deep_copy(forcingModesIdir, forcingModes);
 //      Kokkos::deep_copy(forcingModesJdir, forcingModes);
@@ -359,9 +361,7 @@ void Forcing::ComputeForcing(real dt) {
                       #endif //COMPONENTS == 3
                     #endif //COMPONENTS >= 2
                   }
-//                  printf("%f\n", forcing_MX1.real());
                   forcingTerm(IDIR,k,j,i) += forcing_MX1.real();
-//                 printf("%f\n", forcingModesIdir(0,k,j,i).real());
                   forcingTerm(JDIR,k,j,i) += forcing_MX2.real();
                   forcingTerm(KDIR,k,j,i) += forcing_MX3.real();
   });
