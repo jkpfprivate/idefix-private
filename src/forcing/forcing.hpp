@@ -59,6 +59,7 @@ class Forcing {
 
   ForcingType forcingType;
   int normal2Diso;
+  std::string normal2DisoStr;
 
   IdefixArray2D<real> k3Diso;
   IdefixHostArray2D<real> k3DisoHost;
