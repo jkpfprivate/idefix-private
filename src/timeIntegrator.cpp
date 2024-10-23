@@ -86,8 +86,7 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
     d.SyncToDevice();
     data.forcing->InitForcingModes();
     if(data.forcing->write) {
-      data.forcing->oUprocesses.ResetProcessesValues(data.forcing->modeNames);
-//      data.forcing->oUprocesses.ResetProcessesValues(data.forcing->modeNamesHost);
+      data.forcing->oUprocesses.ResetProcessesValues();
       data.forcing->oUprocesses.ResetNormalValues();
     }
   }

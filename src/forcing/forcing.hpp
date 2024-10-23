@@ -22,9 +22,15 @@ class Forcing {
 
   void InitForcingModes();          ///< init forcing modes given its type
 
-  void ComputeForcing(real);        ///< compute forcing field at current time t
+  void ComputeForcing(real);        ///< compute the required forcing field at current time t
+  
+  void ComputePristineForcing(real);///< compute the pristine forcing field at current time t
 
-  void ResetForcingTerm();          ///< fill the forcing field with zeros.
+  void ComputeSolenoidalForcing(real); ///< compute the solenoidal part of the forcing field at current time t
+
+//  void ComputeCompressiveForcing(real); ///< compute the compressive part of the forcing field at current time t
+
+  void ResetForcingTerms();          ///< fill the forcing field with zeros.
 
   void ShowConfig();                ///< Show the forcing configuration
 
@@ -39,8 +45,11 @@ class Forcing {
   #endif //COMPONENTS >= 2
 //  IdefixHostArray2D<std::string> modeNamesHost;
   std::vector<std::vector<std::string>> modeNames;
-  // Forcing term
+  // Forcing terms
   IdefixArray4D<real> forcingTerm;
+  IdefixArray4D<real> pristineForcingTerm;
+  IdefixArray4D<real> solenoidalForcingTerm;
+//  IdefixArray4D<real> compressiveForcingTerm;
   OrnsteinUhlenbeckProcesses oUprocesses;
 
 //  // Whether we should skip gravity computation every n steps
@@ -60,6 +69,7 @@ class Forcing {
   ForcingType forcingType;
   int normal2Diso;
   std::string normal2DisoStr;
+  int haveSolenoidalForcing;
 
   IdefixArray2D<real> k3Diso;
   IdefixHostArray2D<real> k3DisoHost;
