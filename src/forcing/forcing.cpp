@@ -255,7 +255,6 @@ void Forcing::ShowConfig() {
 
 void Forcing::InitForcingModes() {
   idfx::pushRegion("Forcing::InitForcingModes");
-//  IdefixArray4D<Kokkos::complex<real>> forcingModes = this->forcingModes;
   IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
   IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
   IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
@@ -293,9 +292,6 @@ void Forcing::InitForcingModes() {
                     forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
                     forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
       });
-//      Kokkos::deep_copy(forcingModesIdir, forcingModes);
-//      Kokkos::deep_copy(forcingModesJdir, forcingModes);
-//      Kokkos::deep_copy(forcingModesKdir, forcingModes);
       break;
     case ForcingType::iso2D:
       idefix_for("iso2D", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
@@ -307,9 +303,6 @@ void Forcing::InitForcingModes() {
                     forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
                     forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
       });
-//      Kokkos::deep_copy(forcingModesIdir, forcingModes);
-//      Kokkos::deep_copy(forcingModesJdir, forcingModes);
-//      Kokkos::deep_copy(forcingModesKdir, forcingModes);
       break;
     #if VSH == YES
       case ForcingType::vsh:
