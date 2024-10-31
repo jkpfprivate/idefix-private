@@ -11,6 +11,34 @@
 #include "dataBlock.hpp"
 #include "input.hpp"
 
+KOKKOS_INLINE_FUNCTION real K_aff(real x, real x0, real x1) {
+  return 2./(x1-x0)*x - (x1+x0)/(x1-x0);
+}
+
+KOKKOS_INLINE_FUNCTION real K_cheby_fst(int n, real x) {
+  if (x >= -1. and x <= 1.) {
+    return cos(n*acos(x));
+  } else {
+    return ZERO_F;
+  }
+}
+
+KOKKOS_INLINE_FUNCTION real K_cheby_fst_hom_dir_right(int n, real x) {
+  if (x >= -1. and x <= 1.) {
+    return cos((n+1)*acos(x)) - 1.;
+  } else {
+    return ZERO_F;
+  }
+}
+
+KOKKOS_INLINE_FUNCTION real K_cheby_fst_hom_dir_both(int n, real x) {
+  if (x >= -1. and x <= 1.) {
+    return cos(2*(n+1)*acos(x)) - 1.;
+  } else {
+    return ZERO_F;
+  }
+}
+
 Forcing::Forcing(Input &input, DataBlock *datain) {
   idfx::pushRegion("Forcing::Forcing");
   this->data = datain;
@@ -23,13 +51,18 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   this->kmin = -1.;
   this->kmax = -1.;
-  this->ellmin = -1.;
-  this->ellmax = -1.;
-  this->mmin = -1.;
-  this->mmax = -1.;
+  this->ellmin = -1;
+  this->ellmax = -1;
+  this->mmin = -1;
+  this->mmax = -1;
   this->haveSolenoidalForcing = false;
 
-  real kx0, ky0, kz0;
+  this->xbeg = data->mygrid->xbeg[IDIR];
+  this->xend = data->mygrid->xend[IDIR];
+  this->ybeg = data->mygrid->xbeg[JDIR];
+  this->yend = data->mygrid->xend[JDIR];
+  this->zbeg = data->mygrid->xbeg[KDIR];
+  this->zend = data->mygrid->xend[KDIR];
 
   if (input.CheckEntry("Forcing", "iso3D")>=0) {
     this->forcingType = iso3D;
@@ -48,9 +81,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
     std::vector<std::vector<real>> k3Disovec;
 
-    kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
-    ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
-    kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
+    this->kx0 = 2.*M_PI/(xend - xbeg);
+    this->ky0 = 2.*M_PI/(yend - ybeg);
+    this->kz0 = 2.*M_PI/(zend - zbeg);
     int nxmax = kmax/kx0 + 1;
     int nymax = kmax/ky0 + 1;
     int nzmax = kmax/kz0 + 1;
@@ -65,6 +98,15 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
             nForcingModes ++;
             k3Disovec.push_back({kx, ky, kz});
             modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz)});
+            nForcingModes ++;
+            k3Disovec.push_back({kx, -ky, kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(-ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(-ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(-ny) + std::to_string(nz)});
+            nForcingModes ++;
+            k3Disovec.push_back({kx, ky, -kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(-nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(-nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(-nz)});
+            nForcingModes ++;
+            k3Disovec.push_back({kx, -ky, -kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(-ny) + std::to_string(-nz), "J" + std::to_string(nx) + std::to_string(-ny) + std::to_string(-nz), "K" + std::to_string(nx) + std::to_string(-ny) + std::to_string(-nz)});
           }
         }
       }
@@ -110,6 +152,20 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     int nxmax = (this->normal2Diso==IDIR) ? 1 : kmax/kx0 + 1;
     int nymax = (this->normal2Diso==JDIR) ? 1 : kmax/ky0 + 1;
     int nzmax = (this->normal2Diso==KDIR) ? 1 : kmax/kz0 + 1;
+    int xsign, ysign, zsign;
+    if (this->normal2Diso==IDIR) {
+      xsign = 0;
+      ysign = 1;
+      zsign = -1;
+    } else if (this->normal2Diso==JDIR) {
+      xsign = 1;
+      ysign = 0;
+      zsign = -1;
+    } else {
+      xsign = 1;
+      ysign = -1;
+      zsign = 0;
+    }
     for (int nx=0; nx<nxmax; nx++) {
       for (int ny=0; ny<nymax; ny++) {
         for (int nz=0; nz<nzmax; nz++) {
@@ -121,6 +177,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
             nForcingModes ++;
             k2Disovec.push_back({kx, ky, kz});
             modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz)});
+            nForcingModes ++;
+            k2Disovec.push_back({xsign*kx, ysign*ky, zsign*kz});
+            modeNames.push_back({"I" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz), "J" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz), "K" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz)});
           }
         }
       }
@@ -133,6 +192,89 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       k2DisoHost(l,2) = k2Disovec[l][2];
     }
     Kokkos::deep_copy(k2Diso, k2DisoHost);
+    this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+    this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", nForcingModes,
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+    this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", nForcingModes,
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  }
+
+  else if (input.CheckEntry("Forcing", "ani3D")>=0) {
+    this->forcingType = ani3D;
+    this->normal3DaniBoundStr = input.Get<std::string>("Forcing","ani3D", 0);
+    if (this->normal3DaniBoundStr == "bothfree") this->normal3DaniBound = bothFree;
+    else if (this->normal3DaniBoundStr == "righthomdir") this->normal3DaniBound = rightHomDir;
+    else if (this->normal3DaniBoundStr == "bothhomdir") this->normal3DaniBound = bothHomDir;
+    else IDEFIX_ERROR("The boundaries for the normal component of the forcing can only be free, righthomdir or bothhomdir for now.");
+    this->normal3DaniStr = input.Get<std::string>("Forcing","ani3D", 1);
+    if (this->normal3DaniStr == "IDIR") this->normal3Dani = IDIR;
+    else if (this->normal3DaniStr == "JDIR") this->normal3Dani = JDIR;
+    else if (this->normal3DaniStr == "KDIR") this->normal3Dani = KDIR;
+    else IDEFIX_ERROR("The normal component for 3D anisotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
+    #if COMPONENTS < 3 or DIMENSIONS < 3
+      IDEFIX_ERROR("You cannot have 3D anisotropic forcing with less than 3 components and dimensions.");
+    #endif //COMPONENTS < 3 or DIMENSIONS < 3
+
+    this->kmin = input.Get<real>("Forcing","ani3D", 2);
+    this->kmax = input.Get<real>("Forcing","ani3D", 3);
+
+    std::vector<std::vector<real>> k3Danivec;
+
+    kx0 = 2.*M_PI/(data->mygrid->xend[IDIR] - data->mygrid->xbeg[IDIR]);
+    ky0 = 2.*M_PI/(data->mygrid->xend[JDIR] - data->mygrid->xbeg[JDIR]);
+    kz0 = 2.*M_PI/(data->mygrid->xend[KDIR] - data->mygrid->xbeg[KDIR]);
+    int nxmax = kmax/kx0 + 1;
+    int nymax = kmax/ky0 + 1;
+    int nzmax = kmax/kz0 + 1;
+    int xsign, ysign, zsign;
+    if (this->normal3Dani==IDIR) {
+      xsign = 1;
+      ysign = 1;
+      zsign = -1;
+    } else if (this->normal3Dani==JDIR) {
+      xsign = 1;
+      ysign = 1;
+      zsign = -1;
+    } else if (this->normal3Dani==KDIR) {
+      xsign = 1;
+      ysign = -1;
+      zsign = 1;
+    } else {
+      IDEFIX_ERROR("Forcing: normal direction not known");
+    }
+    for (int nx=0; nx<nxmax; nx++) {
+      for (int ny=0; ny<nymax; ny++) {
+        for (int nz=0; nz<nzmax; nz++) {
+          real kx = kx0*nx;
+          real ky = ky0*ny;
+          real kz = kz0*nz;
+          real factor = 1.;
+          #if GEOMETRY == SPHERICAL
+            factor *= 4./pow(xbeg+xend, 2.);
+          #endif //GEOMETRY == SPHERICAL
+          //undimensionalise kx so that kmin and kmax corresponds to angular ktheta and kphi
+          real k_2 = kx*kx/factor + (ky*ky + kz*kz);
+//          real k_2 = kx*kx + factor*(ky*ky + kz*kz);
+          if (k_2 >= kmin*kmin and k_2 <= kmax*kmax) {
+            nForcingModes ++;
+            k3Danivec.push_back({kx, ky, kz});
+            modeNames.push_back({"I" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "J" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz), "K" + std::to_string(nx) + std::to_string(ny) + std::to_string(nz)});
+            nForcingModes ++;
+            k3Danivec.push_back({xsign*kx, ysign*ky, zsign*kz});
+            modeNames.push_back({"I" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz), "J" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz), "K" + std::to_string(xsign*nx) + std::to_string(ysign*ny) + std::to_string(zsign*nz)});
+          }
+        }
+      }
+    }
+    k3DaniHost = IdefixHostArray2D<real>("k3DaniHost", nForcingModes, 3);
+    k3Dani = IdefixArray2D<real>("k3Dani", nForcingModes, 3);
+    for (int l=0; l<nForcingModes; l++) {
+      k3DaniHost(l,0) = k3Danivec[l][0];
+      k3DaniHost(l,1) = k3Danivec[l][1];
+      k3DaniHost(l,2) = k3Danivec[l][2];
+    }
+    Kokkos::deep_copy(k3Dani, k3DaniHost);
     this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
                               data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
     this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", nForcingModes,
@@ -238,6 +380,11 @@ void Forcing::ShowConfig() {
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
       break;
+    case ForcingType::ani3D:
+      idfx::cout << "Forcing: 3D anisotropic with normal " << normal3DaniStr << " and " << normal3DaniBoundStr << " boundaries." << std::endl;
+      idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
+      if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
+      break;
     case ForcingType::vsh:
       idfx::cout << "Forcing: vector spherical harmonics." << std::endl;
       idfx::cout << "Forcing: ellmin=" << ellmin << " and ellmax=" << ellmax << " ." << std::endl;
@@ -255,6 +402,17 @@ void Forcing::ShowConfig() {
 
 void Forcing::InitForcingModes() {
   idfx::pushRegion("Forcing::InitForcingModes");
+  int normal3Dani = this->normal3Dani;
+  int normal3DaniBound = this->normal3DaniBound;
+  real kx0 = this->kx0;
+  real ky0 = this->ky0;
+  real kz0 = this->kz0;
+  real xbeg = this->xbeg;
+  real ybeg = this->ybeg;
+  real zbeg = this->zbeg;
+  real xend = this->xend;
+  real yend = this->yend;
+  real zend = this->zend;
   IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
   IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
   IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
@@ -263,6 +421,7 @@ void Forcing::InitForcingModes() {
   IdefixArray1D<real> x3 = data->x[KDIR];
   IdefixArray2D<real> k3Diso = this->k3Diso;
   IdefixArray2D<real> k2Diso = this->k2Diso;
+  IdefixArray2D<real> k3Dani = this->k3Dani;
   IdefixArray2D<int> ellmVsh = this->ellmVsh;
   Kokkos::complex unit_j(0.,1.);
   int nForcingModes = this->nForcingModes;
@@ -288,9 +447,10 @@ void Forcing::InitForcingModes() {
                     real kx = k3Diso(l, IDIR);
                     real ky = k3Diso(l, JDIR);
                     real kz = k3Diso(l, KDIR);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
-                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
-                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    real kdotx = kx*x1(i) + ky*x2(j) + kz*x3(k);
+                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx);
+                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx);
+                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx);
       });
       break;
     case ForcingType::iso2D:
@@ -299,10 +459,84 @@ void Forcing::InitForcingModes() {
                     real kx = k2Diso(l, IDIR);
                     real ky = k2Diso(l, JDIR);
                     real kz = k2Diso(l, KDIR);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
-                    forcingModesJdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
-                    forcingModesKdir(l,k,j,i) = exp(unit_j*(kx*x1(i) + ky*x2(j) + kz*x3(k)));
+                    real kdotx = kx*x1(i) + ky*x2(j) + kz*x3(k);
+                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx);
+                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx);
+                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx);
       });
+      break;
+    case ForcingType::ani3D:
+      idefix_for("ani3D", 0, nForcingModes, 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
+                  KOKKOS_LAMBDA (int l, int k, int j, int i) {
+                    real kx = k3Dani(l, IDIR);
+                    real ky = k3Dani(l, JDIR);
+                    real kz = k3Dani(l, KDIR);
+                    int offx = (normal3Dani==IDIR) ? 0 : 1;
+                    int offy = (normal3Dani==JDIR) ? 0 : 1;
+                    int offz = (normal3Dani==KDIR) ? 0 : 1;
+                    real kdotx = offx*kx*x1(i) + offy*ky*x2(j) + offz*kz*x3(k);
+                    int oppx = (normal3Dani==IDIR) ? 1 : 0;
+                    int oppy = (normal3Dani==JDIR) ? 1 : 0;
+                    int oppz = (normal3Dani==KDIR) ? 1 : 0;
+                    int order = 0;
+                    order = (normal3Dani==IDIR) ? kx/kx0 : order;
+                    order = (normal3Dani==JDIR) ? ky/ky0 : kz/kz0;
+                    real rightx = oppx*x1(i) + oppy*x2(j) + oppz*x3(k);
+                    real rightx0 = oppx*xbeg + oppy*ybeg + oppz*zbeg;
+                    real rightx1 = oppx*xend + oppy*yend + oppz*zend;
+                    switch(normal3DaniBound) {
+                      case NormalBoundType::bothFree:
+                        forcingModesIdir(l,k,j,i) = K_cheby_fst(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesJdir(l,k,j,i) = K_cheby_fst(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesKdir(l,k,j,i) = K_cheby_fst(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                      break;
+                      case NormalBoundType::rightHomDir:
+                        forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                      break;
+                      case NormalBoundType::bothHomDir:
+                        forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                        forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                      break;
+                    }
+      });
+//      Piece of code to write the Chebyshev polynomials in a txt file and plot them with matplotlib
+//      Working in mono-domain only
+//      int order_max = kmax/kx0 + 1;
+//      IdefixHostArray2D<real> chebyHost("chebyHost", order_max, data->np_tot[IDIR]);
+//      IdefixArray2D<real> cheby("cheby", order_max, data->np_tot[IDIR]);
+//      idefix_for("write", 0, order_max, 0, data->np_tot[IDIR],
+//                  KOKKOS_LAMBDA (int order, int i) {
+//                    cheby(order,i) = K_cheby_fst(order, K_aff(x1(i), xbeg, xend));
+//      });
+//      IdefixHostArray1D<real> x1host("x1host", data->np_tot[IDIR]);
+//      Kokkos::deep_copy(chebyHost, cheby);
+//      Kokkos::deep_copy(x1host, x1);
+//      if(idfx::prank==0) {
+//        int precision = 10;
+//        int col_width = precision + 10;
+//        std::string filename = "chebyshev.dat";
+//        std::ofstream file;
+//        file.open(filename, std::ios::trunc);
+//        file << std::setw(col_width) << "x";
+//        for (int l=0; l<order_max; l++) {
+//          std::string current_name = "T"+std::to_string(l);
+//          file << std::setw(col_width) << current_name;
+//        }
+//        file << std::endl;
+//        file.precision(precision);
+//        for (int i=0; i<data->np_tot[IDIR]; i++) {
+//          file << std::setw(col_width) << x1host(i);
+//          for (int l=0; l<order_max; l++) {
+//            file << std::scientific << std::setw(col_width) << chebyHost(l,i);
+//          }
+//          file << std::endl;
+//        }
+//        file << std::endl;
+//        file.close();
+//      }
       break;
     #if VSH == YES
       case ForcingType::vsh:
