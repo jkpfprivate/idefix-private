@@ -37,7 +37,7 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
               KOKKOS_LAMBDA (int l, int dir) {
         means(l, dir) = mean(l, dir);
         tcorrs(l, dir) = tcorr(l, dir);
-        epsilons(l, dir) = epsilon(l, dir);
+        epsilons(l, dir) = epsilon(l, dir)/pow(nSeries,2.); //so that the total amplitude is independent of the number of modes used to force
         ouValues(l, dir) = mean(l, dir);
   });
 

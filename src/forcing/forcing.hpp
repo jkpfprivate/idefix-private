@@ -12,7 +12,8 @@
 #include "input.hpp"
 #include "OrnsteinUhlenbeckProcess.hpp"
 
-enum ForcingType {iso3D, iso2D, vsh, userDef};
+enum ForcingType {iso3D, iso2D, ani3D, vsh, userDef};
+enum NormalBoundType {bothFree, rightHomDir, bothHomDir};
 
 class DataBlock;
 
@@ -52,8 +53,8 @@ class Forcing {
 //  IdefixArray4D<real> compressiveForcingTerm;
   OrnsteinUhlenbeckProcesses oUprocesses;
 
-//  // Whether we should skip gravity computation every n steps
-//  int skipGravity{1};
+//  real aff(real, real, real);
+//  real cheby_fst(int, real);
 
   int write;
  private:
@@ -69,16 +70,31 @@ class Forcing {
   ForcingType forcingType;
   int normal2Diso;
   std::string normal2DisoStr;
+  int normal3Dani;
+  std::string normal3DaniStr;
+  NormalBoundType normal3DaniBound;
+  std::string normal3DaniBoundStr;
   int haveSolenoidalForcing;
 
   IdefixArray2D<real> k3Diso;
   IdefixHostArray2D<real> k3DisoHost;
   IdefixArray2D<real> k2Diso;
   IdefixHostArray2D<real> k2DisoHost;
+  IdefixArray2D<real> k3Dani;
+  IdefixHostArray2D<real> k3DaniHost;
   IdefixArray2D<int> ellmVsh;
   IdefixHostArray2D<int> ellmVshHost;
   real kmin;
   real kmax;
+  real kx0;
+  real ky0;
+  real kz0;
+  real xbeg;
+  real ybeg;
+  real zbeg;
+  real xend;
+  real yend;
+  real zend;
   int ellmin;
   int ellmax;
   int mmin;

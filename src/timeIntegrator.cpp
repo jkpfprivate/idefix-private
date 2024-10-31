@@ -85,8 +85,8 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
     DataBlockHost d(data);
     d.SyncToDevice();
     data.forcing->InitForcingModes();
+    data.forcing->oUprocesses.ResetProcessesValues(); // so that we get the excited modes even if we don't write
     if(data.forcing->write) {
-      data.forcing->oUprocesses.ResetProcessesValues();
       data.forcing->oUprocesses.ResetNormalValues();
     }
   }
