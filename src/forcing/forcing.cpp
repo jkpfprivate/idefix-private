@@ -87,9 +87,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     int nxmax = kmax/kx0 + 1;
     int nymax = kmax/ky0 + 1;
     int nzmax = kmax/kz0 + 1;
-    for (int nx=0; nx<nxmax; nx++) {
-      for (int ny=0; ny<nymax; ny++) {
-        for (int nz=0; nz<nzmax; nz++) {
+    for (int nx=1; nx<nxmax; nx++) {
+      for (int ny=1; ny<nymax; ny++) {
+        for (int nz=1; nz<nzmax; nz++) {
           real kx = kx0*nx;
           real ky = ky0*ny;
           real kz = kz0*nz;
@@ -166,9 +166,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       ysign = -1;
       zsign = 0;
     }
-    for (int nx=0; nx<nxmax; nx++) {
-      for (int ny=0; ny<nymax; ny++) {
-        for (int nz=0; nz<nzmax; nz++) {
+    for (int nx=1; nx<nxmax; nx++) {
+      for (int ny=1; ny<nymax; ny++) {
+        for (int nz=1; nz<nzmax; nz++) {
           real kx = kx0*nx;
           real ky = ky0*ny;
           real kz = kz0*nz;
@@ -243,9 +243,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     } else {
       IDEFIX_ERROR("Forcing: normal direction not known");
     }
-    for (int nx=0; nx<nxmax; nx++) {
-      for (int ny=0; ny<nymax; ny++) {
-        for (int nz=0; nz<nzmax; nz++) {
+    for (int nx=1; nx<nxmax; nx++) {
+      for (int ny=1; ny<nymax; ny++) {
+        for (int nz=1; nz<nzmax; nz++) {
           real kx = kx0*nx;
           real ky = ky0*ny;
           real kz = kz0*nz;
