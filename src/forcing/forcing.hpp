@@ -13,7 +13,8 @@
 #include "OrnsteinUhlenbeckProcess.hpp"
 
 enum ForcingType {iso3D, iso2D, ani3D, vsh, userDef};
-enum NormalBoundType {bothFree, rightHomDir, bothHomDir};
+enum NormalBoundType {bothFree, rightHomDir, bothHomDir, bothHomNeu};
+enum NormalBasis {chebyshev, legendre, fourier};
 
 class DataBlock;
 
@@ -53,8 +54,7 @@ class Forcing {
 //  IdefixArray4D<real> compressiveForcingTerm;
   OrnsteinUhlenbeckProcesses oUprocesses;
 
-//  real aff(real, real, real);
-//  real cheby_fst(int, real);
+  void WriteNormalBasis(std::string);                ///< Write the functions of the normal basis in txt files
 
   int write;
  private:
@@ -74,6 +74,8 @@ class Forcing {
   std::string normal3DaniStr;
   NormalBoundType normal3DaniBound;
   std::string normal3DaniBoundStr;
+  NormalBasis normal3DaniBasis;
+  std::string normal3DaniBasisStr;
   int haveSolenoidalForcing;
 
   IdefixArray2D<real> k3Diso;
