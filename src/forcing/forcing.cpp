@@ -681,6 +681,7 @@ void Forcing::ComputeForcing(real dt) {
   
   ResetForcingTerms();
   if (haveSolenoidalForcing) {
+    ComputePristineForcing(dt);
     ComputeSolenoidalForcing(dt);
     forcingTerm = solenoidalForcingTerm;
   } else {
@@ -699,7 +700,7 @@ void Forcing::ComputePristineForcing(real dt) {
   IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir; ,
   IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir; ,
   IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir; )
-  IdefixArray4D<real> forcingTerm = this->forcingTerm;
+  IdefixArray4D<real> pristineForcingTerm = this->pristineForcingTerm;
   IdefixArray2D<Kokkos::complex<real>> ouValues = this->oUprocesses.ouValues;
   int nForcingModes = this->nForcingModes;
   idefix_for("ComputePristineForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
@@ -726,9 +727,9 @@ void Forcing::ComputePristineForcing(real dt) {
                       #endif //COMPONENTS == 3
                     #endif //COMPONENTS >= 2
                   }
-                  forcingTerm(IDIR,k,j,i) += forcingX1.real();
-                  forcingTerm(JDIR,k,j,i) += forcingX2.real();
-                  forcingTerm(KDIR,k,j,i) += forcingX3.real();
+                  pristineForcingTerm(IDIR,k,j,i) += forcingX1.real();
+                  pristineForcingTerm(JDIR,k,j,i) += forcingX2.real();
+                  pristineForcingTerm(KDIR,k,j,i) += forcingX3.real();
   });
 
   idfx::popRegion();
@@ -743,61 +744,79 @@ void Forcing::ComputeSolenoidalForcing(real dt) {
   IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir; ,
   IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir; ,
   IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir; )
+  IdefixArray4D<real> pristineForcingTerm = this->pristineForcingTerm;
   IdefixArray4D<real> solenoidalForcingTerm = this->solenoidalForcingTerm;
-  IdefixArray2D<Kokkos::complex<real>> ouValues = this->oUprocesses.ouValues;
-  int nForcingModes = this->nForcingModes;
-  Kokkos::complex unit_j(0.,1.);
-  #if GEOMETRY == SPHERICAL
-    IdefixArray1D<real> x1 = data->x[IDIR];
-    IdefixArray1D<real> sinx2 = data->sinx2;
-  #endif //GEOMETRY == SPHERICAL
-  idefix_for("ComputeSolenoidalForcing", 0, data->np_tot[KDIR], 0, data->np_tot[JDIR], 0, data->np_tot[IDIR],
+
+  IdefixArray1D<real> dx1 = data->dx[IDIR];
+  IdefixArray1D<real> dx2 = data->dx[JDIR];
+  IdefixArray1D<real> dx3 = data->dx[KDIR];
+
+  IdefixArray1D<real> x1m = data->xl[IDIR];
+  IdefixArray1D<real> x2m = data->xl[JDIR];
+  IdefixArray1D<real> x1 = data->x[IDIR];
+  IdefixArray1D<real> x2 = data->x[JDIR];
+
+  IdefixArray1D<real> sinx2 = data->sinx2;
+
+  real kmean = HALF_F*(kmax + kmin);
+  idefix_for("ComputeSolenoidalForcing", 1, data->np_tot[KDIR] - 1, 1, data->np_tot[JDIR] - 1, 1, data->np_tot[IDIR] - 1,
               KOKKOS_LAMBDA (int k, int j, int i) {
-                  #if GEOMETRY == SPHERICAL
-                    real r = x1(i);
-                    real sin_1 = 1./sinx2(j);
-                  #endif //GEOMETRY == SPHERICAL
-                  Kokkos::complex<real> forcingX1 = 0.;
-                  Kokkos::complex<real> forcingX2 = 0.;
-                  Kokkos::complex<real> forcingX3 = 0.;
-                  real kx1, kx2, kx3, sqrt_kk;
-                  for (int l=0; l<nForcingModes; l++) {
-                    kx1 = kiso(l,0);
-                    kx2 = kiso(l,1);
-                    kx3 = kiso(l,2);
-                    #if GEOMETRY == CARTESIAN
-                      sqrt_kk = sqrt(kx1*kx1 + kx2*kx2 + kx3*kx3);
-                      //Here we are computing unit k
-                      kx1 /= sqrt_kk;
-                      kx2 /= sqrt_kk;
-                      kx3 /= sqrt_kk;
-                      //Here we are coding, for each mode k, a_k x ik/k
-                      forcingX1 += unit_j*(ouValues(l,JDIR)*kx3 - ouValues(l,KDIR)*kx2)*forcingModesIdir(l,k,j,i);
-                      #if COMPONENTS >= 2
-                        forcingX2 += unit_j*(ouValues(l,KDIR)*kx1 - ouValues(l,IDIR)*kx3)*forcingModesJdir(l,k,j,i);
-                        #if COMPONENTS == 3
-                          forcingX3 += unit_j*(ouValues(l,IDIR)*kx2 - ouValues(l,JDIR)*kx1)*forcingModesKdir(l,k,j,i);
-                        #endif //COMPONENTS == 3
-                      #endif //COMPONENTS >= 2
-                    #elif GEOMETRY == SPHERICAL
-                      sqrt_kk = sqrt(kx1*kx1 + 1./(r*r)*(kx2*kx2 + sin_1*kx3*sin_1*kx3));
-                      //Here we are computing unit k
-                      kx1 /= sqrt_kk;
-                      kx2 /= sqrt_kk;
-                      kx3 /= sqrt_kk;
-                      //Here we are coding, for each mode k, a_k x ik/k
-                      forcingX1 += unit_j*(ouValues(l,JDIR)*sin_1/r*kx3 - ouValues(l,KDIR)/r*kx2)*forcingModesIdir(l,k,j,i);
-                      #if COMPONENTS >= 2
-                        forcingX2 += unit_j*(ouValues(l,KDIR)*kx1 - ouValues(l,IDIR)*sin_1/r*kx3)*forcingModesJdir(l,k,j,i);
-                        #if COMPONENTS == 3
-                          forcingX3 += unit_j*(ouValues(l,IDIR)/r*kx2 - ouValues(l,JDIR)*kx1)*forcingModesKdir(l,k,j,i);
-                        #endif //COMPONENTS == 3
-                      #endif //COMPONENTS >= 2
-                    #endif //GEOMETRY == SPHERICAL
-                    }
-                  solenoidalForcingTerm(IDIR,k,j,i) += forcingX1.real();
-                  solenoidalForcingTerm(JDIR,k,j,i) += forcingX2.real();
-                  solenoidalForcingTerm(KDIR,k,j,i) += forcingX3.real();
+                #if GEOMETRY == CARTESIAN
+                      solenoidalForcingTerm(IDIR,k,j,i) = D_EXPAND( ZERO_F                                               ,
+                                                 + 1/dx2(j) * (pristineForcingTerm(KDIR,k,j+1,i) - pristineForcingTerm(KDIR,k,j-1,i) )  ,
+                                                 - 1/dx3(k) * (pristineForcingTerm(JDIR,k+1,j,i) - pristineForcingTerm(JDIR,k-1,j,i) )  );
+                  #if DIMENSIONS >= 2
+                      solenoidalForcingTerm(JDIR,k,j,i) = D_EXPAND( - 1/dx1(i) * (pristineForcingTerm(KDIR,k,j,i+1) - pristineForcingTerm(KDIR,k,j,i-1) )  ,
+                                                                                                      ,
+                                                 + 1/dx3(k) * (pristineForcingTerm(IDIR,k+1,j,i) - pristineForcingTerm(IDIR,k-1,j,i) )  );
+                  #endif
+                  #if DIMENSIONS == 3
+                      solenoidalForcingTerm(KDIR,k,j,i) = 1/dx1(i) * (pristineForcingTerm(JDIR,k,j,i+1) - pristineForcingTerm(JDIR,k,j,i-1) )
+                                       - 1/dx2(j) * (pristineForcingTerm(IDIR,k,j+1,i) - pristineForcingTerm(IDIR,k,j-1,i) );
+                  #endif
+                #endif
+                #if GEOMETRY == CYLINDRICAL
+                      IDEFIX_ERROR("Not yet defined");
+                #endif
+                #if GEOMETRY == POLAR
+                      solenoidalForcingTerm(IDIR,k,j,i) = D_EXPAND( ZERO_F                                                       ,
+                                                 + 1/(x1(i)*dx2(j)) * (pristineForcingTerm(KDIR,k,j+1,i) - pristineForcingTerm(KDIR,k,j-1,i) ) ,
+                                                 - 1/dx3(k) * (pristineForcingTerm(JDIR,k+1,j,i) - pristineForcingTerm(JDIR,k-1,j,i) )          );
+
+                      solenoidalForcingTerm(JDIR,k,j,i) = D_EXPAND( - 1/dx1(i) * (pristineForcingTerm(KDIR,k,j,i+1) - pristineForcingTerm(KDIR,k,j,i-1) )  ,
+                                                                                                      ,
+                                                 + 1/dx3(k) * (pristineForcingTerm(IDIR,k+1,j,i) - pristineForcingTerm(IDIR,k-1,j,i) )  );
+
+                  #if DIMENSIONS == 3
+                      solenoidalForcingTerm(KDIR,k,j,i) = 1/(x1(i)*dx1(i)) * (x1(i+1)*pristineForcingTerm(JDIR,k,j,i+1) - x1(i-1)*pristineForcingTerm(JDIR,k,j,i-1) )
+                                       - 1/(x1(i)*dx2(j)) * (pristineForcingTerm(IDIR,k,j+1,i) - pristineForcingTerm(IDIR,k,j-1,i) );
+                  #endif
+                #endif
+                #if GEOMETRY == SPHERICAL
+                      real Ax2 = fabs(sinx2(j));
+//                      // Regularisation along the axis
+//                      if(FABS(Ax2)<1e-12) Ax2 = ONE_F;
+                      solenoidalForcingTerm(IDIR,k,j,i) = D_EXPAND( ZERO_F                                                ,
+                                                 + 1/(x1m(i)*Ax2) * (sinx2(j+1)*pristineForcingTerm(KDIR,k,j+1,i)
+                                                 - sinx2(j-1)*pristineForcingTerm(KDIR,k,j-1,i) )                       ,
+                                                 - 1/(x1(i)*Ax2*dx3(k)) * (pristineForcingTerm(JDIR,k+1,j,i)
+                                                 - pristineForcingTerm(JDIR,k-1,j,i) )                                   );
+
+                      solenoidalForcingTerm(JDIR,k,j,i) = D_EXPAND( - 1/(x1(i)*dx1(i)) * (x1(i+1)*pristineForcingTerm(KDIR,k,j,i+1)
+                                                 - x1(i-1)*pristineForcingTerm(KDIR,k,j,i-1) )                           ,
+                                                                                                      ,
+                                                 + 1/(x1(i)*Ax2*dx3(k)) * (pristineForcingTerm(IDIR,k+1,j,i)
+                                                 - pristineForcingTerm(IDIR,k-1,j,i) )                                  );
+
+                  #if DIMENSIONS == 3
+                      solenoidalForcingTerm(KDIR,k,j,i) = 1/(x1(i)*dx1(i)) * (x1(i+1)*pristineForcingTerm(JDIR,k,j,i+1) - x1(i-1)*pristineForcingTerm(JDIR,k,j,i-1) )
+                                      - 1/(x1(i)*dx2(j)) * (pristineForcingTerm(IDIR,k,j+1,i) - pristineForcingTerm(IDIR,k,j-1,i) );
+                  #endif
+                #endif
+
+                solenoidalForcingTerm(IDIR,k,j,i) /= 2.*kmean;
+                solenoidalForcingTerm(JDIR,k,j,i) /= 2.*kmean;
+                solenoidalForcingTerm(KDIR,k,j,i) /= 2.*kmean;
   });
 
   idfx::popRegion();
