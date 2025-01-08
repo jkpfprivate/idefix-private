@@ -38,13 +38,10 @@ class Forcing {
 
   // Forcing modes
 //  IdefixArray4D<Kokkos::complex<real>> forcingModes;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir;
-  #if COMPONENTS >= 2
-    IdefixArray4D<Kokkos::complex<real>> forcingModesJdir;
-    #if COMPONENTS == 3
-      IdefixArray4D<Kokkos::complex<real>> forcingModesKdir;
-    #endif //COMPONENTS == 3
-  #endif //COMPONENTS >= 2
+  EXPAND(
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir; )
 //  IdefixHostArray2D<std::string> modeNamesHost;
   std::vector<std::vector<std::string>> modeNames;
   // Forcing terms

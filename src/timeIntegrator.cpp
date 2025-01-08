@@ -89,6 +89,7 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
     if(data.forcing->write) {
       data.forcing->oUprocesses.ResetNormalValues();
     }
+    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues(data.tabDt);
   }
 
   idfx::popRegion();
@@ -425,6 +426,7 @@ void TimeIntegrator::Cycle(DataBlock &data) {
       }
       data.dt=newdt;
     }
+    data.tabDt.push_back(data.dt);
     if(data.dt < 1e-15) {
       std::stringstream msg;
       msg << "dt = " << data.dt << " is too small.";
