@@ -102,6 +102,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       IDEFIX_ERROR("You cannot have 3D isotropic forcing in another geometry than Cartesian");
     #endif //GEOMETRY != CARTESIAN
     #if COMPONENTS < 3 or DIMENSIONS < 3
+std::cout << COMPONENTS << DIMENSIONS << std::endl;
       IDEFIX_ERROR("You cannot have 3D isotropic forcing with less than 3 components and dimensions.");
     #endif //COMPONENTS < 3 or DIMENSIONS < 3
 // if () IDEFIX_ERROR("You should not have 3D isotropic forcing with other boundary conditions than fully periodic.");
@@ -148,12 +149,13 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       k3DisoHost(l,2) = k3Disovec[l][2];
     }
     Kokkos::deep_copy(k3Diso, k3DisoHost);
+    EXPAND(
     this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          )
   }
 
   else if (input.CheckEntry("Forcing", "iso2D")>=0) {
@@ -221,12 +223,13 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       k2DisoHost(l,2) = k2Disovec[l][2];
     }
     Kokkos::deep_copy(k2Diso, k2DisoHost);
+    EXPAND(
     this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          )
   }
 
   else if (input.CheckEntry("Forcing", "ani3D")>=0) {
@@ -311,12 +314,13 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
       k3DaniHost(l,2) = k3Danivec[l][2];
     }
     Kokkos::deep_copy(k3Dani, k3DaniHost);
+    EXPAND(
     this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          ,
     this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);          )
   }
 
   else if (input.CheckEntry("Forcing", "vsh")>=0) {
@@ -349,14 +353,15 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
     }
     Kokkos::deep_copy(ellmVsh, ellmVshHost);
 
+    EXPAND(
     this->forcingModesIdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesIdir", nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);            ,
     // WARNING, vsh case needs a special treatment since the forcing modes between
     // the theta and phi directions are coupled to each other...
     this->forcingModesJdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesJdir", 2*nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);            ,
     this->forcingModesKdir = IdefixArray4D<Kokkos::complex<real>>("forcingModesKdir", 2*nForcingModes,
-                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);            )
   }
 
 //  else { this->haveUserDef = true;}
@@ -450,9 +455,10 @@ void Forcing::InitForcingModes() {
   real xend = this->xend;
   real yend = this->yend;
   real zend = this->zend;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
+  EXPAND(
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir; )
   IdefixArray1D<real> x1 = data->x[IDIR];
   IdefixArray1D<real> x2 = data->x[JDIR];
   IdefixArray1D<real> x3 = data->x[KDIR];
@@ -469,12 +475,14 @@ void Forcing::InitForcingModes() {
               0, data->np_tot[JDIR],
               0, data->np_tot[IDIR],
               KOKKOS_LAMBDA(int l, int k, int j, int i) {
-                forcingModesIdir(l,k,j,i) = ZERO_F;
-                forcingModesJdir(l,k,j,i) = ZERO_F;
-                forcingModesKdir(l,k,j,i) = ZERO_F;
+                EXPAND(
+                forcingModesIdir(l,k,j,i) = ZERO_F; ,
+                forcingModesJdir(l,k,j,i) = ZERO_F; ,
+                forcingModesKdir(l,k,j,i) = ZERO_F; )
                 if (forcingType == vsh) {
-                  forcingModesJdir(l+nForcingModes,k,j,i) = ZERO_F;
-                  forcingModesKdir(l+nForcingModes,k,j,i) = ZERO_F;
+                  EXPAND(                                           ,
+                  forcingModesJdir(l+nForcingModes,k,j,i) = ZERO_F; ,
+                  forcingModesKdir(l+nForcingModes,k,j,i) = ZERO_F; )
                 }
               });
   switch(forcingType) {
@@ -485,9 +493,10 @@ void Forcing::InitForcingModes() {
                     real ky = k3Diso(l, JDIR);
                     real kz = k3Diso(l, KDIR);
                     real kdotx = kx*x1(i) + ky*x2(j) + kz*x3(k);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx);
-                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx);
-                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx);
+                    EXPAND(
+                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx); ,
+                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx); ,
+                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx); )
       });
       break;
     case ForcingType::iso2D:
@@ -497,9 +506,10 @@ void Forcing::InitForcingModes() {
                     real ky = k2Diso(l, JDIR);
                     real kz = k2Diso(l, KDIR);
                     real kdotx = kx*x1(i) + ky*x2(j) + kz*x3(k);
-                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx);
-                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx);
-                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx);
+                    EXPAND(
+                    forcingModesIdir(l,k,j,i) = exp(unit_j * kdotx); ,
+                    forcingModesJdir(l,k,j,i) = exp(unit_j * kdotx); ,
+                    forcingModesKdir(l,k,j,i) = exp(unit_j * kdotx); )
       });
       break;
     case ForcingType::ani3D:
@@ -525,38 +535,44 @@ void Forcing::InitForcingModes() {
                       case NormalBasis::chebyshev:
                         switch(normal3DaniBound) {
                           case NormalBoundType::bothFree:
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                           case NormalBoundType::rightHomDir:
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                           case NormalBoundType::bothHomDir:
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                         }
                       break;
                       case NormalBasis::fourier:
                         switch(normal3DaniBound) {
                           case NormalBoundType::bothFree:
-                            forcingModesIdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                           case NormalBoundType::bothHomDir:
-                            forcingModesIdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                           case NormalBoundType::bothHomNeu:
-                            forcingModesIdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesJdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
-                            forcingModesKdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            EXPAND(
+                            forcingModesIdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesJdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
+                            forcingModesKdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
                           break;
                       }
                     }
@@ -593,7 +609,7 @@ void Forcing::WriteNormalBasis(std::string folder) {
   IdefixArray1D<real> x1 = data->x[IDIR];
   int order_max = kmax/kx0 + 1;
   int order_min = kmin/kx0 - 1;
-  order_min = max(1, order_min);
+  order_min = std::max(1, order_min);
   real xbeg = this->xbeg;
   real xend = this->xend;
   int normal3DaniBound = this->normal3DaniBound;
@@ -679,9 +695,10 @@ void Forcing::ComputeForcing(real dt) {
 void Forcing::ComputePristineForcing(real dt) {
   idfx::pushRegion("Forcing::ComputePristineForcing");
   
-  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
+  EXPAND(
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir; )
   IdefixArray4D<real> forcingTerm = this->forcingTerm;
   IdefixArray2D<Kokkos::complex<real>> ouValues = this->oUprocesses.ouValues;
   int nForcingModes = this->nForcingModes;
@@ -722,9 +739,10 @@ void Forcing::ComputeSolenoidalForcing(real dt) {
   idfx::pushRegion("Forcing::ComputeSolenoidalForcing");
   
   IdefixArray2D<real> kiso = (this->forcingType == iso3D) ? this->k3Diso : this->k2Diso;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir;
-  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir;
+  EXPAND(
+  IdefixArray4D<Kokkos::complex<real>> forcingModesIdir = this->forcingModesIdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesJdir = this->forcingModesJdir; ,
+  IdefixArray4D<Kokkos::complex<real>> forcingModesKdir = this->forcingModesKdir; )
   IdefixArray4D<real> solenoidalForcingTerm = this->solenoidalForcingTerm;
   IdefixArray2D<Kokkos::complex<real>> ouValues = this->oUprocesses.ouValues;
   int nForcingModes = this->nForcingModes;

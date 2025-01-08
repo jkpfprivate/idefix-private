@@ -79,6 +79,14 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   });
 }
 
+void OrnsteinUhlenbeckProcesses::AdvanceProcessesValues(std::vector<real> tabDt) {
+  while (not tabDt.empty()) {
+    real dt = tabDt[0];
+    tabDt.erase(tabDt.begin());
+    UpdateProcessesValues(dt);
+  }
+}
+
 void OrnsteinUhlenbeckProcesses::ResetProcessesValues() {
   if(idfx::prank==0) {
     file.open(ouFilename, std::ios::trunc);

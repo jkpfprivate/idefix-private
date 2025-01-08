@@ -107,6 +107,7 @@ class DataBlock {
   std::array<int,3> gbeg;      ///< First global index of the active domain of this datablock
   std::array<int,3> gend;      ///< Last global index of the active domain of this datablock
 
+  std::vector<real> tabDt;     ///< Vector of all timesteps
   real dt;                     ///< Current timestep
   real t;                      ///< Current time
 
