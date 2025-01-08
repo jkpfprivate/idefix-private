@@ -872,6 +872,7 @@ void Forcing::ComputeSolenoidalForcing(real dt) {
 void Forcing::ResetForcingTerms() {
   idfx::pushRegion("Forcing::ResetForcingTerms");
   IdefixArray4D<real> forcingTerm = this->forcingTerm;
+  IdefixArray4D<real> pristineForcingTerm = this->pristineForcingTerm;
   IdefixArray4D<real> solenoidalForcingTerm = this->solenoidalForcingTerm;
 //  IdefixArray4D<real> compressiveForcingTerm = this->compressiveForcingTerm;
   idefix_for("Forcing::ResetForcingTerms",
@@ -882,6 +883,9 @@ void Forcing::ResetForcingTerms() {
                 forcingTerm(IDIR,k,j,i) = ZERO_F;
                 forcingTerm(JDIR,k,j,i) = ZERO_F;
                 forcingTerm(KDIR,k,j,i) = ZERO_F;
+                pristineForcingTerm(IDIR,k,j,i) = ZERO_F;
+                pristineForcingTerm(JDIR,k,j,i) = ZERO_F;
+                pristineForcingTerm(KDIR,k,j,i) = ZERO_F;
                 solenoidalForcingTerm(IDIR,k,j,i) = ZERO_F;
                 solenoidalForcingTerm(JDIR,k,j,i) = ZERO_F;
                 solenoidalForcingTerm(KDIR,k,j,i) = ZERO_F;

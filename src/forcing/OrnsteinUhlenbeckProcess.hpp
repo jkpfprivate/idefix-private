@@ -47,14 +47,18 @@ public:
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
     void InitProcesses(std::string, int, int, std::vector<std::vector<std::string>> modeNames, IdefixArray2D<real>, IdefixArray2D<real>, IdefixArray2D<real>);
     void UpdateProcessesValues(real);
-    void AdvanceProcessesValues(std::vector<real>);
+//    void AdvanceProcessesValues(std::vector<real>);
+    void AdvanceProcessesValues();
 
     std::string ouFilename;
     std::string normalFilename;
+    std::string timestepFilename;
     void ResetProcessesValues();
     void WriteProcessesValues(real);
     void ResetNormalValues();
     void WriteNormalValues(real);
+    void ResetTimestep();
+    void WriteTimestep(real, real);
     int precision;
 
     std::ofstream file;
