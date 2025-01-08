@@ -43,6 +43,7 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
 
   this->ouFilename = folder + "/ou_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->normalFilename = folder + "/normal_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
+  this->timestepFilename = folder + "/timestep.dat";
   this->precision = 10;
   this->ouValuesHost = IdefixHostArray2D<Kokkos::complex<real>> ("ouValuesHost", nSeries, COMPONENTS);
   this->normalValuesRealHost = IdefixHostArray2D<real> ("normalValuesRealHost", nSeries, COMPONENTS);
@@ -79,11 +80,32 @@ void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt) {
   });
 }
 
-void OrnsteinUhlenbeckProcesses::AdvanceProcessesValues(std::vector<real> tabDt) {
-  while (not tabDt.empty()) {
-    real dt = tabDt[0];
-    tabDt.erase(tabDt.begin());
-    UpdateProcessesValues(dt);
+//void OrnsteinUhlenbeckProcesses::AdvanceProcessesValues(std::vector<real> tabDt) {
+//std::cout << tabDt.empty() << std::endl;
+//  while (not tabDt.empty()) {
+//    real dt = tabDt[0];
+//    tabDt.erase(tabDt.begin());
+//    UpdateProcessesValues(dt);
+////std::cout << dt << std::endl;
+//  }
+//}
+
+void OrnsteinUhlenbeckProcesses::AdvanceProcessesValues() {
+
+  std::ifstream file(timestepFilename);
+  std::string line;
+
+  if (file.is_open()) {
+    while (getline(file, line)) {
+      real dt = std::stof(line);
+//      std::cout << line << std::endl;
+//      std::cout << dt << std::endl;
+      UpdateProcessesValues(dt);
+    }
+    file.close();
+  }
+  else {
+      IDEFIX_ERROR("UNABLE TO READ THE TIMESTEP FILE TO ADVANCE OU PROCESSES");
   }
 }
 
@@ -152,6 +174,25 @@ void OrnsteinUhlenbeckProcesses::WriteNormalValues(real time) {
         file << std::scientific << std::setw(col_width) << normalValuesRealHost(l,dir) << '+' << normalValuesImagHost(l,dir) << 'j';
       }
     }
+    file << std::endl;
+    file.close();
+  }
+}
+
+void OrnsteinUhlenbeckProcesses::ResetTimestep() {
+  if(idfx::prank==0) {
+    file.open(timestepFilename, std::ios::trunc);
+    file.close();
+  }
+}
+
+void OrnsteinUhlenbeckProcesses::WriteTimestep(real time, real dt) {
+  if(idfx::prank==0) {
+    int col_width = precision + 10;
+    file.open(timestepFilename, std::ios::app);
+    file.precision(precision);
+    this->file << std::scientific << std::setw(col_width) << dt;
+    this->file << std::scientific << std::setw(col_width) << time;
     file << std::endl;
     file.close();
   }

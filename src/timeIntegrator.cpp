@@ -85,11 +85,15 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
     DataBlockHost d(data);
     d.SyncToDevice();
     data.forcing->InitForcingModes();
-    data.forcing->oUprocesses.ResetProcessesValues(); // so that we get the excited modes even if we don't write
-    if(data.forcing->write) {
-      data.forcing->oUprocesses.ResetNormalValues();
+    if (!input.restartRequested) {
+      data.forcing->oUprocesses.ResetProcessesValues(); // so that we get the excited modes even if we don't write
+      data.forcing->oUprocesses.ResetTimestep();
+      if(data.forcing->write) {
+        data.forcing->oUprocesses.ResetNormalValues();
+      }
     }
-    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues(data.tabDt);
+//    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues();
+//    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues(data.tabDt);
   }
 
   idfx::popRegion();
