@@ -197,9 +197,9 @@ std::cout << COMPONENTS << DIMENSIONS << std::endl;
       ysign = -1;
       zsign = 0;
     }
-    for (int nx=1; nx<nxmax; nx++) {
-      for (int ny=1; ny<nymax; ny++) {
-        for (int nz=1; nz<nzmax; nz++) {
+    for (int nx=0; nx<nxmax; nx++) {
+      for (int ny=0; ny<nymax; ny++) {
+        for (int nz=0; nz<nzmax; nz++) {
           real kx = kx0*nx;
           real ky = ky0*ny;
           real kz = kz0*nz;
@@ -414,21 +414,25 @@ void Forcing::ShowConfig() {
     case ForcingType::iso3D:
       idfx::cout << "Forcing: 3D isotropic." << std::endl;
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
+      idfx::cout << "Forcing: There are " << nForcingModes << " different forcing modes." << std::endl;
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
       break;
     case ForcingType::iso2D:
       idfx::cout << "Forcing: 2D isotropic with normal " << normal2DisoStr << "." << std::endl;
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
+      idfx::cout << "Forcing: There are " << nForcingModes << " different forcing modes." << std::endl;
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
       break;
     case ForcingType::ani3D:
       idfx::cout << "Forcing: 3D anisotropic with normal " << normal3DaniStr << ", " << normal3DaniBoundStr << " boundaries and " << normal3DaniBasisStr << " basis." << std::endl;
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
+      idfx::cout << "Forcing: There are " << nForcingModes << " different forcing modes." << std::endl;
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
       break;
     case ForcingType::vsh:
       idfx::cout << "Forcing: vector spherical harmonics." << std::endl;
       idfx::cout << "Forcing: ellmin=" << ellmin << " and ellmax=" << ellmax << " ." << std::endl;
+      idfx::cout << "Forcing: There are " << nForcingModes << " different forcing modes." << std::endl;
       break;
     case ForcingType::userDef:
       idfx::cout << "Forcing: userdef." << std::endl;
