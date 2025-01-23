@@ -22,6 +22,9 @@ class Forcing {
  public:
   Forcing(Input&, DataBlock*);
 
+  bool stillHaveForcing;
+  real stopTime;
+
   void InitForcingModes();          ///< init forcing modes given its type
 
   void ComputeForcing(real);        ///< compute the required forcing field at current time t

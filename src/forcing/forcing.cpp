@@ -75,6 +75,9 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   this->write = input.GetOrSet<int>("Forcing","write",0, 0);
   std::string folder = input.GetOrSet<std::string>("Forcing","filename",0,"testOU");
 
+  this->stillHaveForcing = true;
+  this->stopTime = input.GetOrSet<real>("Forcing","stoptime",0,std::numeric_limits<double>::infinity());
+
   this->nForcingModes = 0;
 
   this->kmin = -1.;
@@ -410,6 +413,9 @@ std::cout << COMPONENTS << DIMENSIONS << std::endl;
 
 void Forcing::ShowConfig() {
   idfx::cout << "Forcing: ENABLED with seed " << seed << "." << std::endl;
+  if (stopTime < std::numeric_limits<double>::infinity()) {
+    idfx::cout << "Forcing: will be stopped at t = " << stopTime << " ." << std::endl;
+  }
   switch(forcingType) {
     case ForcingType::iso3D:
       idfx::cout << "Forcing: 3D isotropic." << std::endl;
