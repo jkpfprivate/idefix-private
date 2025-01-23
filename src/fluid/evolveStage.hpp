@@ -98,6 +98,8 @@ void Fluid<Phys>::EvolveForcing(const real t, const real dt) {
     data->forcing->oUprocesses.WriteNormalValues(t);
   }
 
+  if (data->forcing->stillHaveForcing and t > data->forcing->stopTime) data->forcing->stillHaveForcing = false;
+
   // Loop on all of the directions
   LoopForcingDir<IDIR>(t,dt);
 
