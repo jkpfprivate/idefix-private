@@ -73,7 +73,8 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
   this->seed = input.GetOrSet<int>("Forcing","seed",0,0);
 
   this->write = input.GetOrSet<int>("Forcing","write",0, 0);
-  std::string folder = input.GetOrSet<std::string>("Forcing","filename",0,"testOU");
+//  std::string folder = input.GetOrSet<std::string>("Forcing","filename",0,"testOU");
+  std::string folder = input.GetOrSet<std::string>("Output","folder",0,"output");
 
   this->stillHaveForcing = true;
   this->stopTime = input.GetOrSet<real>("Forcing","stoptime",0,std::numeric_limits<double>::infinity());
