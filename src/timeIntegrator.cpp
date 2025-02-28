@@ -92,7 +92,7 @@ TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
         data.forcing->oUprocesses.ResetNormalValues();
       }
     }
-//    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues();
+    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues();
 //    if (input.restartRequested) data.forcing->oUprocesses.AdvanceProcessesValues(data.tabDt);
   }
 
