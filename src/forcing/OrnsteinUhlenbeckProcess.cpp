@@ -97,9 +97,9 @@ void OrnsteinUhlenbeckProcesses::AdvanceProcessesValues() {
 
   if (file.is_open()) {
     while (getline(file, line)) {
-      real dt = std::stof(line);
-//      std::cout << line << std::endl;
-//      std::cout << dt << std::endl;
+      std::string::size_type sz;
+      real dt = std::stof(line, &sz);
+      real t = std::stof(line.substr(sz));
       UpdateProcessesValues(dt);
     }
     file.close();
