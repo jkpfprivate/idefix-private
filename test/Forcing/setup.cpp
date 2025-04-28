@@ -1,13 +1,10 @@
 #include "idefix.hpp"
 #include "setup.hpp"
-//#include "analysis.hpp"
-//#include "userdef.hpp"
+#include "analysis.hpp"
 #include <vector>
 #include <fstream>
 #include <random>
-#include <cmath>
-
-#include "versionSetup.hpp"
+//#include <cmath>
 
 static real rminGlob;
 static real rmaxGlob;
@@ -27,36 +24,36 @@ DiffusionType diffTypeGlob;
 enum MagType {radial, azimuthal};
 MagType magTypeGlob; 
 
-//Analysis *analysis;
-//void AnalysisFunction(DataBlock &data) {
-//  analysis->PerformAnalysis(data);
-//}
+Analysis *analysis;
+void AnalysisFunction(DataBlock &data) {
+  analysis->PerformAnalysis(data);
+}
 
 // Initialisation routine. Can be used to allocate Arrays or variables which are used later on
 Setup::Setup(Input &input, Grid &grid, DataBlock &data, Output &output) {
-//  std::string outputFolder = input.GetOrSet<std::string>("Output","folder",0,"output");
-//  if(idfx::prank==0) {
-//    if(!fs::is_directory(outputFolder)) {
-//      try {
-//        if(!fs::create_directory(outputFolder)) {
-//          std::stringstream msg;
-//          msg << "Cannot create directory " << outputFolder << std::endl;
-//          IDEFIX_ERROR(msg);
-//        }
-//      } catch(std::exception &e) {
-//        std::stringstream msg;
-//        msg << "Cannot create directory " << outputFolder << std::endl;
-//        msg << e.what();
-//        IDEFIX_ERROR(msg);
-//      }
-//    }
-//  }
-//  analysis = new Analysis(input, grid, data, output,std::string(outputFolder+"/timevol.dat"));
-//  output.EnrollAnalysis(&AnalysisFunction);
-//  // Reset analysis if required
-//  if(!input.restartRequested) {
-//    analysis->ResetAnalysis();
-//  }
+  std::string outputFolder = input.GetOrSet<std::string>("Output","folder",0,"output");
+  if(idfx::prank==0) {
+    if(!fs::is_directory(outputFolder)) {
+      try {
+        if(!fs::create_directory(outputFolder)) {
+          std::stringstream msg;
+          msg << "Cannot create directory " << outputFolder << std::endl;
+          IDEFIX_ERROR(msg);
+        }
+      } catch(std::exception &e) {
+        std::stringstream msg;
+        msg << "Cannot create directory " << outputFolder << std::endl;
+        msg << e.what();
+        IDEFIX_ERROR(msg);
+      }
+    }
+  }
+  analysis = new Analysis(input, grid, data, output,std::string(outputFolder+"/timevol.dat"));
+  output.EnrollAnalysis(&AnalysisFunction);
+  // Reset analysis if required
+  if(!input.restartRequested) {
+    analysis->ResetAnalysis();
+  }
 
   ampGlob = input.Get<real>("Setup","amp",0);
 

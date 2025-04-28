@@ -739,8 +739,12 @@ void Forcing::ComputePristineForcing(real dt) {
                     #endif //COMPONENTS >= 2
                   }
                   pristineForcingTerm(IDIR,k,j,i) += forcingX1.real();
-                  pristineForcingTerm(JDIR,k,j,i) += forcingX2.real();
-                  pristineForcingTerm(KDIR,k,j,i) += forcingX3.real();
+                  #if COMPONENTS >= 2
+                    pristineForcingTerm(JDIR,k,j,i) += forcingX2.real();
+                    #if COMPONENTS == 3
+                      pristineForcingTerm(KDIR,k,j,i) += forcingX3.real();
+                    #endif //COMPONENTS == 3
+                  #endif //COMPONENTS >= 2
   });
 
   idfx::popRegion();
@@ -892,17 +896,21 @@ void Forcing::ResetForcingTerms() {
               0, data->np_tot[IDIR],
               KOKKOS_LAMBDA(int k, int j, int i) {
                 forcingTerm(IDIR,k,j,i) = ZERO_F;
-                forcingTerm(JDIR,k,j,i) = ZERO_F;
-                forcingTerm(KDIR,k,j,i) = ZERO_F;
                 pristineForcingTerm(IDIR,k,j,i) = ZERO_F;
-                pristineForcingTerm(JDIR,k,j,i) = ZERO_F;
-                pristineForcingTerm(KDIR,k,j,i) = ZERO_F;
                 solenoidalForcingTerm(IDIR,k,j,i) = ZERO_F;
-                solenoidalForcingTerm(JDIR,k,j,i) = ZERO_F;
-                solenoidalForcingTerm(KDIR,k,j,i) = ZERO_F;
 //                compressiveForcingTerm(IDIR,k,j,i) = ZERO_F;
+                #if COMPONENTS >= 2
+                  forcingTerm(JDIR,k,j,i) = ZERO_F;
+                  pristineForcingTerm(JDIR,k,j,i) = ZERO_F;
+                  solenoidalForcingTerm(JDIR,k,j,i) = ZERO_F;
 //                compressiveForcingTerm(JDIR,k,j,i) = ZERO_F;
+                  #if COMPONENTS == 3
+                    forcingTerm(KDIR,k,j,i) = ZERO_F;
+                    pristineForcingTerm(KDIR,k,j,i) = ZERO_F;
+                    solenoidalForcingTerm(KDIR,k,j,i) = ZERO_F;
 //                compressiveForcingTerm(KDIR,k,j,i) = ZERO_F;
+                  #endif //COMPONENTS == 3
+                #endif //COMPONENTS >= 2
               });
   idfx::popRegion();
 }
