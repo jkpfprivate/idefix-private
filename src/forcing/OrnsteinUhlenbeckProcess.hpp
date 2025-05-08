@@ -45,7 +45,8 @@ public:
     IdefixHostArray2D<real> normalValuesImagHost;
 
     OrnsteinUhlenbeckProcesses(); // Default (empty) constructor
-    void InitProcesses(std::string, int, int, std::vector<std::vector<std::string>> modeNames, IdefixArray2D<real>, IdefixArray2D<real>, IdefixArray2D<real>);
+    void InitProcesses(std::string, int, int, std::vector<std::vector<std::string>>);
+    void SetProcesses(IdefixArray2D<real>, IdefixArray2D<real>, IdefixArray2D<real>);
     void UpdateProcessesValues(real);
 //    void AdvanceProcessesValues(std::vector<real>);
     void AdvanceProcessesValues();

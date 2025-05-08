@@ -25,6 +25,8 @@ class Forcing {
   bool stillHaveForcing;
   real stopTime;
 
+  void InitForcingParameters();          ///< init forcing parameters
+
   void InitForcingModes();          ///< init forcing modes given its type
 
   void ComputeForcing(real);        ///< compute the required forcing field at current time t
@@ -36,6 +38,8 @@ class Forcing {
 //  void ComputeCompressiveForcing(real); ///< compute the compressive part of the forcing field at current time t
 
   void ResetForcingTerms();          ///< fill the forcing field with zeros.
+
+  void ComputeAverageSoundSpeed(); ///< compute the initial average sound speed within the solution domain
 
   void ShowConfig();                ///< Show the forcing configuration
 
@@ -61,11 +65,19 @@ class Forcing {
 
   DataBlock *data;
   int seed;
+  std::string folder;
 
   int nForcingModes;
+  real machNumber;
+  real cs;
+  real tcorr;
+  real epsilon;
   IdefixArray2D<real> tcorrs;
   IdefixArray2D<real> means;
   IdefixArray2D<real> epsilons;
+  IdefixHostArray2D<real> hostTcorrs;
+  IdefixHostArray2D<real> hostMeans;
+  IdefixHostArray2D<real> hostEpsilons;
 
   ForcingType forcingType;
   int normal2Diso;

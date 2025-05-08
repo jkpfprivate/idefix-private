@@ -18,28 +18,13 @@ OrnsteinUhlenbeckProcesses::OrnsteinUhlenbeckProcesses()
 { // Default (empty) constructor
 }
 
-void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int nSeries, std::vector<std::vector<std::string>> modeNames, IdefixArray2D<real> mean, IdefixArray2D<real> tcorr, IdefixArray2D<real> epsilon) {
+void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int nSeries, std::vector<std::vector<std::string>> modeNames) {
   this->names = modeNames;
   this->nSeries = nSeries;
-  this->epsilons = IdefixArray2D<real> ("ouEpsilons", nSeries, COMPONENTS);
-  this->tcorrs = IdefixArray2D<real> ("ouTcorrs", nSeries, COMPONENTS);
-  this->means = IdefixArray2D<real> ("ouMeans", nSeries, COMPONENTS);
   this->ouValues = IdefixArray2D<Kokkos::complex<real>> ("ouValues", nSeries, COMPONENTS);
   this->normalValuesReal = IdefixArray2D<real> ("normalValuesReal", nSeries, COMPONENTS);
   this->normalValuesImag = IdefixArray2D<real> ("normalValuesImag", nSeries, COMPONENTS);
   this->random_pool = Kokkos::Random_XorShift64_Pool<> (/*seed=*/seed);
-
-  IdefixArray2D<real> means = this->means;
-  IdefixArray2D<real> tcorrs = this->tcorrs;
-  IdefixArray2D<real> epsilons = this->epsilons;
-  IdefixArray2D<Kokkos::complex<real>> ouValues = this->ouValues;
-  idefix_for("InitProcesses", 0, nSeries, 0, COMPONENTS,
-              KOKKOS_LAMBDA (int l, int dir) {
-        means(l, dir) = mean(l, dir);
-        tcorrs(l, dir) = tcorr(l, dir);
-        epsilons(l, dir) = epsilon(l, dir)/pow(nSeries,2.); //so that the total amplitude is independent of the number of modes used to force
-        ouValues(l, dir) = mean(l, dir);
-  });
 
   this->ouFilename = folder + "/ou_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
   this->normalFilename = folder + "/normal_prank" + std::to_string(idfx::prank) + "_seed" + std::to_string(seed) + ".dat";
@@ -48,6 +33,24 @@ void OrnsteinUhlenbeckProcesses::InitProcesses(std::string folder, int seed, int
   this->ouValuesHost = IdefixHostArray2D<Kokkos::complex<real>> ("ouValuesHost", nSeries, COMPONENTS);
   this->normalValuesRealHost = IdefixHostArray2D<real> ("normalValuesRealHost", nSeries, COMPONENTS);
   this->normalValuesImagHost = IdefixHostArray2D<real> ("normalValuesImagHost", nSeries, COMPONENTS);
+}
+
+void OrnsteinUhlenbeckProcesses::SetProcesses(IdefixArray2D<real> mean, IdefixArray2D<real> tcorr, IdefixArray2D<real> epsilon) {
+  this->epsilons = IdefixArray2D<real> ("ouEpsilons", nSeries, COMPONENTS);
+  this->tcorrs = IdefixArray2D<real> ("ouTcorrs", nSeries, COMPONENTS);
+  this->means = IdefixArray2D<real> ("ouMeans", nSeries, COMPONENTS);
+  IdefixArray2D<real> means = this->means;
+  IdefixArray2D<real> tcorrs = this->tcorrs;
+  IdefixArray2D<real> epsilons = this->epsilons;
+  IdefixArray2D<Kokkos::complex<real>> ouValues = this->ouValues;
+  int nSeries = this->nSeries;
+  idefix_for("SetProcesses", 0, nSeries, 0, COMPONENTS,
+              KOKKOS_LAMBDA (int l, int dir) {
+        means(l, dir) = mean(l, dir);
+        tcorrs(l, dir) = tcorr(l, dir);
+        epsilons(l, dir) = epsilon(l, dir)/nSeries; //so that the total amplitude is independent of the number of modes used to force
+        ouValues(l, dir) = mean(l, dir);
+  });
 }
 
 //void OrnsteinUhlenbeckProcesses::UpdateProcessesValues(real dt, IdefixArray1D<real> epsilons) {

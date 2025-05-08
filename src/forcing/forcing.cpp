@@ -9,6 +9,7 @@
 
 #include "forcing.hpp"
 #include "dataBlock.hpp"
+#include "dataBlockHost.hpp"
 #include "input.hpp"
 
 KOKKOS_INLINE_FUNCTION real K_aff_11(real x, real x0, real x1) {
@@ -74,7 +75,7 @@ Forcing::Forcing(Input &input, DataBlock *datain) {
 
   this->write = input.GetOrSet<int>("Forcing","write",0, 0);
 //  std::string folder = input.GetOrSet<std::string>("Forcing","filename",0,"testOU");
-  std::string folder = input.GetOrSet<std::string>("Output","folder",0,"output");
+  this->folder = input.GetOrSet<std::string>("Output","folder",0,"output");
 
   this->stillHaveForcing = true;
   this->stopTime = input.GetOrSet<real>("Forcing","stoptime",0,std::numeric_limits<double>::infinity());
@@ -389,33 +390,35 @@ std::cout << COMPONENTS << DIMENSIONS << std::endl;
                               data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
 //  this->compressiveForcingTerm = IdefixArray4D<real>("compressiveForcingTerm", COMPONENTS,
 //                              data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+
   this->means = IdefixArray2D<real>("means", nForcingModes, COMPONENTS);
   this->tcorrs = IdefixArray2D<real>("tcorrs", nForcingModes, COMPONENTS);
   this->epsilons = IdefixArray2D<real>("epsilons", nForcingModes, COMPONENTS);
 
 // WARNING DO SOMETHING WITH MEANS TCORRS AND EPSILONS
-  IdefixHostArray2D<real> mean("mean", nForcingModes, COMPONENTS);
-  IdefixHostArray2D<real> tcorr("tcorr", nForcingModes, COMPONENTS);
-  IdefixHostArray2D<real> epsilon("epsilon", nForcingModes, COMPONENTS);
-  for (int l=0; l<nForcingModes; l++) {
-    for (int dir=IDIR; dir<COMPONENTS; dir++) {
-      mean(l,dir) = ZERO_F;
-      tcorr(l,dir) = input.Get<real>("Forcing", "t_corr", 0);
-      epsilon(l,dir) = input.Get<real>("Forcing", "epsilon", 0);
-    }
+  this->hostMeans = IdefixHostArray2D<real>("hostMeans", nForcingModes, COMPONENTS);
+  this->hostTcorrs = IdefixHostArray2D<real>("hostTcorrs", nForcingModes, COMPONENTS);
+  this->hostEpsilons = IdefixHostArray2D<real>("hostEpsilons", nForcingModes, COMPONENTS);
+  this->machNumber = input.GetOrSet<real>("Forcing", "mach", 0, -1.);
+  if (this->machNumber >= 0) { // in this case they will be reset later
+    tcorr = 1.;
+    epsilon = -1.;
+  } else{
+    tcorr = input.Get<real>("Forcing", "t_corr", 0);
+    epsilon = input.Get<real>("Forcing", "epsilon", 0);
   }
-  Kokkos::deep_copy(this->means, mean);
-  Kokkos::deep_copy(this->tcorrs, tcorr);
-  Kokkos::deep_copy(this->epsilons, epsilon);
-  this->oUprocesses.InitProcesses(folder, this->seed, this->nForcingModes, this->modeNames, this->means, this->tcorrs, this->epsilons);
+  #ifdef ISOTHERMAL
+    this->cs = input.Get<real>("Hydro", "csiso", 1); //WARNING DOESN'T WORK FOR USERDEF csiso
+  #endif
 
+  this->oUprocesses.InitProcesses(this->folder, this->seed, this->nForcingModes, this->modeNames);
   idfx::popRegion();
 }
 
 void Forcing::ShowConfig() {
   idfx::cout << "Forcing: ENABLED with seed " << seed << "." << std::endl;
   if (stopTime < std::numeric_limits<double>::infinity()) {
-    idfx::cout << "Forcing: will be stopped at t = " << stopTime << " ." << std::endl;
+    idfx::cout << "Forcing: will be stopped at t=" << stopTime << " ." << std::endl;
   }
   switch(forcingType) {
     case ForcingType::iso3D:
@@ -446,14 +449,47 @@ void Forcing::ShowConfig() {
       break;
   }
 
+  if (machNumber >= ZERO_F) {
+    idfx::cout << "Forcing: Mach number=" << machNumber << " ." << std::endl;
+  } else {
+    idfx::cout << "Forcing: epsilon=" << epsilon << " and tcorr=" << tcorr << " ." << std::endl;
+  }
+
 //    if(skipGravity>1) {
 //      idfx::cout << "Gravity: gravity field will be updated every " << skipGravity
 //                 << " cycles." << std::endl;
 //    }
 }
 
+void Forcing::InitForcingParameters() {
+  idfx::pushRegion("Forcing::InitForcingParameters");
+
+  if (this->machNumber >= 0) {
+    real kf = HALF_F*(kmin+kmax);
+    #if HAVE_ENERGY 
+      ComputeAverageSoundSpeed();
+    #endif //ISOTHERMAL
+    this->epsilon = pow(this->machNumber*cs,3.)*kf/(2.*M_PI);
+    this->tcorr = 2.*M_PI/(this->machNumber*cs*kf);
+  }
+  for (int l=0; l<nForcingModes; l++) {
+    for (int dir=IDIR; dir<COMPONENTS; dir++) {
+      this->hostMeans(l,dir) = ZERO_F;
+      this->hostTcorrs(l,dir) = tcorr;
+      this->hostEpsilons(l,dir) = epsilon;
+    }
+  }
+  Kokkos::deep_copy(this->means, this->hostMeans);
+  Kokkos::deep_copy(this->tcorrs, this->hostTcorrs);
+  Kokkos::deep_copy(this->epsilons, this->hostEpsilons);
+  this->oUprocesses.SetProcesses(this->means, this->tcorrs, this->epsilons);
+
+  idfx::popRegion();
+}
+
 void Forcing::InitForcingModes() {
   idfx::pushRegion("Forcing::InitForcingModes");
+
   int normal3Dani = this->normal3Dani;
   int normal3DaniBound = this->normal3DaniBound;
   int normal3DaniBasis = this->normal3DaniBasis;
@@ -612,6 +648,7 @@ void Forcing::InitForcingModes() {
 //    case ForcingType::userDef:
 //      break;
   }
+  idfx::popRegion();
 }
 
 // This function writes the normal basis in a txt file to later plot them with matplotlib
@@ -904,6 +941,53 @@ void Forcing::ResetForcingTerms() {
 //                compressiveForcingTerm(JDIR,k,j,i) = ZERO_F;
 //                compressiveForcingTerm(KDIR,k,j,i) = ZERO_F;
               });
+  idfx::popRegion();
+}
+
+void Forcing::ComputeAverageSoundSpeed() {
+  idfx::pushRegion("Forcing::ComputeAverageSoundSpeed");
+  this->cs = 1.;
+
+  DataBlockHost d(*this->data);
+  d.SyncFromDevice();
+  IdefixHostArray1D<real> x1=d.x[IDIR];
+  IdefixHostArray1D<real> x2=d.x[JDIR];
+  IdefixHostArray1D<real> x3=d.x[KDIR];
+  IdefixHostArray4D<real> Vc=d.Vc;
+
+  #if GEOMETRY == CARTESIAN || GEOMETRY == SPHERICAL
+    real currentCs = ZERO_F;
+    real currentVol = ZERO_F;
+    #if GEOMETRY == CARTESIAN
+      for(int i = d.beg[IDIR]; i < d.end[IDIR] ; i++) {
+        for(int j = d.beg[JDIR]; j < d.end[JDIR] ; j++) {
+          for(int k = d.beg[KDIR]; k < d.end[KDIR] ; k++) {
+                currentCs += sqrt(d.Vc(PRS,k,j,i)/d.Vc(RHO,k,j,i));
+                currentVol += d.dV(k,j,i);
+           }
+         }
+       }
+    #endif //GEOMETRY == CARTESIAN
+    #if GEOMETRY == SPHERICAL
+//      real r2, sint;
+      for(int i = d.beg[IDIR]; i < d.end[IDIR] ; i++) {
+//        r2 = x1(i)*x1(i);
+        for(int j = d.beg[JDIR]; j < d.end[JDIR] ; j++) {
+//          sint = SIN(d.x[JDIR](j));
+          for(int k = d.beg[KDIR]; k < d.end[KDIR] ; k++) {
+//                currentCs += r2*sint*sqrt(d.Vc(PRS,k,j,i)/d.Vc(RHO,k,j,i));
+                currentCs += d.dV(k,j,i)*sqrt(d.Vc(PRS,k,j,i)/d.Vc(RHO,k,j,i));
+                currentVol += d.dV(k,j,i);
+          }
+        }
+      }
+    #endif //GEOMETRY == SPHERICAL
+    #ifdef WITH_MPI
+      MPI_Allreduce(MPI_IN_PLACE, &currentCs, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, &currentVol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    #endif
+    this->cs = currentCs/currentVol;
+  #endif //GEOMETRY == CARTESIAN || GEOMETRY == SPHERICAL
   idfx::popRegion();
 }
 
