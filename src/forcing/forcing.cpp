@@ -28,17 +28,18 @@ KOKKOS_INLINE_FUNCTION real K_cheby_fst(int n, real x) {
   }
 }
 
-KOKKOS_INLINE_FUNCTION real K_cheby_fst_hom_dir_right(int n, real x) {
+KOKKOS_INLINE_FUNCTION real K_cheby_fst_both_hom_dir(int n, real x) {
   if (x >= -1. and x <= 1.) {
-    return cos((n+1)*acos(x)) - 1.;
+    return cos(n*acos(x)) - 1.*((n+1)%2) - x*(n%2);
   } else {
     return ZERO_F;
   }
 }
 
-KOKKOS_INLINE_FUNCTION real K_cheby_fst_hom_dir_both(int n, real x) {
+KOKKOS_INLINE_FUNCTION real K_cheby_fst_both_hom_neu(int n, real x) {
   if (x >= -1. and x <= 1.) {
-    return cos(2*n*acos(x)) - 1.;
+    return cos(n*acos(x)) - pow(n/(n+2),2.)*cos((n+2)*acos(x));
+//    return cos(n*acos(x)) - pow(n/(n+2),2.)*cos((n+2)*acos(x))*((n+1)%2) - pow(n/(n+2),2.)*cos((n+2)*acos(x))*(n%2);
   } else {
     return ZERO_F;
   }
@@ -247,24 +248,71 @@ std::cout << COMPONENTS << DIMENSIONS << std::endl;
     else if (this->normal3DaniStr == "JDIR") this->normal3Dani = JDIR;
     else if (this->normal3DaniStr == "KDIR") this->normal3Dani = KDIR;
     else IDEFIX_ERROR("The normal component for 3D anisotropic forcing cannot not be something else than IDIR, JDIR or KDIR");
-    this->normal3DaniBoundStr = input.Get<std::string>("Forcing","ani3D", 1);
-    if (this->normal3DaniBoundStr == "bothfree") this->normal3DaniBound = bothFree;
-    else if (this->normal3DaniBoundStr == "righthomdir") this->normal3DaniBound = rightHomDir;
-    else if (this->normal3DaniBoundStr == "bothhomdir") this->normal3DaniBound = bothHomDir;
-    else if (this->normal3DaniBoundStr == "bothhomneu") this->normal3DaniBound = bothHomNeu;
-    else IDEFIX_ERROR("The boundaries for the normal component of the forcing can only be bothfree, righthomdir, bothhomdir or bothhomneu for now.");
-    this->normal3DaniBasisStr = input.Get<std::string>("Forcing","ani3D", 2);
+//    this->normal3DaniBoundStr = input.Get<std::string>("Forcing","ani3D", 1);
+//    if (this->normal3DaniBoundStr == "bothfree") this->normal3DaniBound = bothFree;
+//    else if (this->normal3DaniBoundStr == "righthomdir") this->normal3DaniBound = rightHomDir;
+//    else if (this->normal3DaniBoundStr == "bothhomdir") this->normal3DaniBound = bothHomDir;
+//    else if (this->normal3DaniBoundStr == "bothhomneu") this->normal3DaniBound = bothHomNeu;
+//    else IDEFIX_ERROR("The boundaries for the normal component of the forcing can only be bothfree, righthomdir, bothhomdir or bothhomneu for now.");
+//    this->normal3DaniBasisStr = input.Get<std::string>("Forcing","ani3D", 2);
+//    if (this->normal3DaniBasisStr == "chebyshev") this->normal3DaniBasis = chebyshev;
+////    else if (this->normal3DaniBasisStr == "legendre") this->normal3DaniBasis = legendre;
+//    else if (this->normal3DaniBasisStr == "fourier") this->normal3DaniBasis = fourier;
+//    else IDEFIX_ERROR("The basis for the normal component of the forcing can only be chebyshev and fourier for now (legendre coming soon).");
+////    if (this->normal3DaniBasis = chebyshev and this->normal3DaniBound = bothHomNeu) IDEFIX_ERROR("Cannot have a chebyshev basis which has both homogeneous Neumann boundaries.");
+////    else if (normal3DaniBasis = fourier and normal3DaniBound = rightHomDir) IDEFIX_ERROR("Cannot have a fourier basis which has only right homogeneous Dirichlet boundary.");
+
+    this->normal3DaniBasisStr = input.Get<std::string>("Forcing","ani3D", 1);
     if (this->normal3DaniBasisStr == "chebyshev") this->normal3DaniBasis = chebyshev;
 //    else if (this->normal3DaniBasisStr == "legendre") this->normal3DaniBasis = legendre;
     else if (this->normal3DaniBasisStr == "fourier") this->normal3DaniBasis = fourier;
     else IDEFIX_ERROR("The basis for the normal component of the forcing can only be chebyshev and fourier for now (legendre coming soon).");
-//    if (this->normal3DaniBasis = chebyshev and this->normal3DaniBound = bothHomNeu) IDEFIX_ERROR("Cannot have a chebyshev basis which has both homogeneous Neumann boundaries.");
-//    else if (normal3DaniBasis = fourier and normal3DaniBound = rightHomDir) IDEFIX_ERROR("Cannot have a fourier basis which has only right homogeneous Dirichlet boundary.");
 
-    this->kmin = input.Get<real>("Forcing","ani3D", 3);
-    this->kmax = input.Get<real>("Forcing","ani3D", 4);
+    std::vector<NormalBoundType> vecNormal3DaniBound;
+    std::string dirbegStr = "X" + std::to_string(this->normal3Dani + 1) + "-beg";
+    std::string direndStr = "X" + std::to_string(this->normal3Dani + 1) + "-end";
+    if (input.Get<std::string>("Boundary",dirbegStr, 0) != input.Get<std::string>("Boundary",direndStr, 0)) {
+      IDEFIX_ERROR("Chebyshev basis with different BCs at the two sides are not yet implemented");
+    } else if (input.Get<std::string>("Boundary",dirbegStr, 0) == "reflective") {
+      (this->normal3Dani == IDIR) ? vecNormal3DaniBound.push_back(bothHomDir) : vecNormal3DaniBound.push_back(bothHomNeu);
+      (this->normal3Dani == JDIR) ? vecNormal3DaniBound.push_back(bothHomDir) : vecNormal3DaniBound.push_back(bothHomNeu);
+      (this->normal3Dani == KDIR) ? vecNormal3DaniBound.push_back(bothHomDir) : vecNormal3DaniBound.push_back(bothHomNeu);
+    } else if (input.Get<std::string>("Boundary",dirbegStr, 0) == "outflow") {
+      vecNormal3DaniBound.push_back(bothHomNeu);
+      vecNormal3DaniBound.push_back(bothHomNeu);
+      vecNormal3DaniBound.push_back(bothHomNeu);
+    } else if (input.Get<std::string>("Boundary",dirbegStr, 0) == "userdef") {
+      for (int dir = IDIR; dir<COMPONENTS; dir++) {
+        std::string userdefDirbegStr = "begBoundTypeVX" + std::to_string(dir + 1);
+        std::string userdefDirendStr = "endBoundTypeVX" + std::to_string(dir + 1);
+        if (input.Get<std::string>("Boundary",userdefDirbegStr, 0) != input.Get<std::string>("Boundary",userdefDirendStr, 0)) {
+          IDEFIX_ERROR("Chebyshev basis with different BCs at the two sides are not yet implemented");
+        } else if (input.Get<std::string>("Boundary",userdefDirbegStr, 0) == "dirichletZero") {
+          vecNormal3DaniBound.push_back(bothHomDir);
+        } else if (input.Get<std::string>("Boundary",userdefDirbegStr, 0) == "neumann") {
+          vecNormal3DaniBound.push_back(bothHomNeu);
+        } else {
+          IDEFIX_ERROR("userdef BCs not recognised, they are needed choose the suitable forcing basis.");
+        }
+      }
+    } else if (input.Get<std::string>("Boundary",dirbegStr, 0) == "periodic") {
+      IDEFIX_ERROR("periodic BCs recognised, you should use 3D isotropic forcing in this direction.");
+    } else {
+      IDEFIX_ERROR("BCs not recognised, they are needed choose the suitable forcing basis.");
+    }
+    normal3DaniBoundHost = IdefixHostArray1D<NormalBoundType>("normal3DaniBoundHost", COMPONENTS);
+    normal3DaniBound = IdefixArray1D<NormalBoundType>("normal3DaniBound", COMPONENTS);
+    for (int l=IDIR; l<COMPONENTS; l++) {
+      normal3DaniBoundHost(l) = vecNormal3DaniBound[l];
+      normal3DaniBoundHost(l) = vecNormal3DaniBound[l];
+      normal3DaniBoundHost(l) = vecNormal3DaniBound[l];
+    }
+    Kokkos::deep_copy(normal3DaniBound, normal3DaniBoundHost);
 
-    if (input.GetOrSet<std::string>("Forcing","ani3D", 5, "n") == "write") WriteNormalBasis(folder);
+    this->kmin = input.Get<real>("Forcing","ani3D", 2);
+    this->kmax = input.Get<real>("Forcing","ani3D", 3);
+
+    if (input.GetOrSet<std::string>("Forcing","ani3D", 4, "n") == "write") WriteNormalBasis(folder);
 
     std::vector<std::vector<real>> k3Danivec;
 
@@ -434,7 +482,7 @@ void Forcing::ShowConfig() {
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
       break;
     case ForcingType::ani3D:
-      idfx::cout << "Forcing: 3D anisotropic with normal " << normal3DaniStr << ", " << normal3DaniBoundStr << " boundaries and " << normal3DaniBasisStr << " basis." << std::endl;
+      idfx::cout << "Forcing: 3D anisotropic with normal " << normal3DaniStr << " and " << normal3DaniBasisStr << " basis." << std::endl;
       idfx::cout << "Forcing: kmin=" << kmin << " and kmax=" << kmax << " ." << std::endl;
       idfx::cout << "Forcing: There are " << nForcingModes << " different forcing modes." << std::endl;
       if (haveSolenoidalForcing) idfx::cout << "Forcing: solenoidal." << std::endl;
@@ -491,7 +539,8 @@ void Forcing::InitForcingModes() {
   idfx::pushRegion("Forcing::InitForcingModes");
 
   int normal3Dani = this->normal3Dani;
-  int normal3DaniBound = this->normal3DaniBound;
+//  IDEFIX_ERROR("DSTOP");
+  IdefixArray1D<NormalBoundType> normal3DaniBound = this->normal3DaniBound;
   int normal3DaniBasis = this->normal3DaniBasis;
   real kx0 = this->kx0;
   real ky0 = this->ky0;
@@ -580,48 +629,38 @@ void Forcing::InitForcingModes() {
                     real rightx1 = oppx*xend + oppy*yend + oppz*zend;
                     switch(normal3DaniBasis) {
                       case NormalBasis::chebyshev:
-                        switch(normal3DaniBound) {
-                          case NormalBoundType::bothFree:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
-                          case NormalBoundType::rightHomDir:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
-                          case NormalBoundType::bothHomDir:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
+                        for (int dir=IDIR; dir<COMPONENTS; dir++) {
+                          int bound = normal3DaniBound(dir);
+                          switch(bound) {
+                            case NormalBoundType::bothHomDir:
+                              if (dir==IDIR) forcingModesIdir(dir,k,j,i) = K_cheby_fst_both_hom_dir(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==JDIR) forcingModesJdir(dir,k,j,i) = K_cheby_fst_both_hom_dir(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==KDIR) forcingModesKdir(dir,k,j,i) = K_cheby_fst_both_hom_dir(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            break;
+                            case NormalBoundType::bothHomNeu:
+                              if (dir==IDIR) forcingModesIdir(dir,k,j,i) = K_cheby_fst_both_hom_neu(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==JDIR) forcingModesJdir(dir,k,j,i) = K_cheby_fst_both_hom_neu(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==KDIR) forcingModesKdir(dir,k,j,i) = K_cheby_fst_both_hom_neu(order, K_aff_11(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            break;
+                          }
                         }
                       break;
                       case NormalBasis::fourier:
-                        switch(normal3DaniBound) {
-                          case NormalBoundType::bothFree:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_fourier(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
-                          case NormalBoundType::bothHomDir:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
-                          case NormalBoundType::bothHomNeu:
-                            EXPAND(
-                            forcingModesIdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesJdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); ,
-                            forcingModesKdir(l,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx); )
-                          break;
-                      }
+                        for (int dir=IDIR; dir<COMPONENTS; dir++) {
+                          int bound = normal3DaniBound(dir);
+                          switch(bound) {
+                            case NormalBoundType::bothHomDir:
+                              if (dir==IDIR) forcingModesIdir(dir,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==JDIR) forcingModesJdir(dir,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==KDIR) forcingModesKdir(dir,k,j,i) = K_sin(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            break;
+                            case NormalBoundType::bothHomNeu:
+                              if (dir==IDIR) forcingModesIdir(dir,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==JDIR) forcingModesJdir(dir,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                              else if (dir==KDIR) forcingModesKdir(dir,k,j,i) = K_cos(order, K_aff_02pi(rightx, rightx0, rightx1)) * exp(unit_j*kdotx);
+                            break;
+                          }
+                        }
                     }
       });
       break;
@@ -660,37 +699,37 @@ void Forcing::WriteNormalBasis(std::string folder) {
   order_min = std::max(1, order_min);
   real xbeg = this->xbeg;
   real xend = this->xend;
-  int normal3DaniBound = this->normal3DaniBound;
+  IdefixArray1D<NormalBoundType> normal3DaniBound = this->normal3DaniBound;
   int normal3DaniBasis = this->normal3DaniBasis;
-  IdefixHostArray2D<real> normalBasisHost("normalBasisHost", order_max, data->np_tot[IDIR]);
-  IdefixArray2D<real> normalBasis("normalBasis", order_max, data->np_tot[IDIR]);
+  IdefixHostArray3D<real> normalBasisHost("normalBasisHost", order_max, COMPONENTS, data->np_tot[IDIR]);
+  IdefixArray3D<real> normalBasis("normalBasis", order_max, COMPONENTS, data->np_tot[IDIR]);
   idefix_for("write", 0, order_max, 0, data->np_tot[IDIR],
               KOKKOS_LAMBDA (int order, int i) {
                 switch(normal3DaniBasis) {
                   case NormalBasis::chebyshev:
-                    switch(normal3DaniBound) {
-                      case NormalBoundType::bothFree:
-                        normalBasis(order,i) = K_cheby_fst(order, K_aff_11(x1(i), xbeg, xend));
+                    for (int dir = IDIR; dir < COMPONENTS; dir++) {
+                      int bound = normal3DaniBound(dir);
+                      switch(bound) {
+                        case NormalBoundType::bothHomDir:
+                          normalBasis(order,dir,i) = K_cheby_fst_both_hom_dir(order, K_aff_11(x1(i), xbeg, xend));
                         break;
-                      case NormalBoundType::rightHomDir:
-                        normalBasis(order,i) = K_cheby_fst_hom_dir_right(order, K_aff_11(x1(i), xbeg, xend));
+                        case NormalBoundType::bothHomNeu:
+                          normalBasis(order,dir,i) = K_cheby_fst_both_hom_neu(order, K_aff_11(x1(i), xbeg, xend));
                         break;
-                      case NormalBoundType::bothHomDir:
-                        normalBasis(order,i) = K_cheby_fst_hom_dir_both(order, K_aff_11(x1(i), xbeg, xend));
-                        break;
+                      }
                     }
                     break;
                   case NormalBasis::fourier:
-                    switch(normal3DaniBound) {
-                      case NormalBoundType::bothFree:
-                        normalBasis(order,i) = K_fourier(order, K_aff_02pi(x1(i), xbeg, xend));
+                    for (int dir = IDIR; dir < COMPONENTS; dir++) {
+                      int bound = normal3DaniBound(dir);
+                      switch(bound) {
+                        case NormalBoundType::bothHomDir:
+                          normalBasis(order,dir,i) = K_sin(order, K_aff_02pi(x1(i), xbeg, xend));
                         break;
-                      case NormalBoundType::bothHomDir:
-                        normalBasis(order,i) = K_sin(order, K_aff_02pi(x1(i), xbeg, xend));
+                        case NormalBoundType::bothHomNeu:
+                          normalBasis(order,dir,i) = K_cos(order, K_aff_02pi(x1(i), xbeg, xend));
                         break;
-                      case NormalBoundType::bothHomNeu:
-                        normalBasis(order,i) = K_cos(order, K_aff_02pi(x1(i), xbeg, xend));
-                        break;
+                      }
                     }
                     break;
                   }
@@ -705,16 +744,24 @@ void Forcing::WriteNormalBasis(std::string folder) {
     std::ofstream file;
     file.open(filename, std::ios::trunc);
     file << std::setw(col_width) << "x";
-    for (int order=order_min; order<order_max; order++) {
-      std::string current_name = "f"+std::to_string(order);
-      file << std::setw(col_width) << current_name;
+    for (int dir=IDIR; dir<COMPONENTS; dir++) {
+      for (int order=order_min; order<order_max; order++) {
+        std::string current_name;
+        if (dir == IDIR) current_name = "fI"+std::to_string(order);
+        else if (dir == JDIR) current_name = "fJ"+std::to_string(order);
+        else if (dir == KDIR) current_name = "fK"+std::to_string(order);
+        else IDEFIX_ERROR("Fucking error");
+        file << std::setw(col_width) << current_name;
+      }
     }
     file << std::endl;
     file.precision(precision);
     for (int i=0; i<data->np_tot[IDIR]; i++) {
       file << std::setw(col_width) << x1host(i);
-      for (int order=order_min; order<order_max; order++) {
-        file << std::scientific << std::setw(col_width) << normalBasisHost(order,i);
+      for (int dir=IDIR; dir<COMPONENTS; dir++) {
+        for (int order=order_min; order<order_max; order++) {
+          file << std::scientific << std::setw(col_width) << normalBasisHost(order,dir,i);
+        }
       }
       file << std::endl;
     }

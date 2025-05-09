@@ -84,7 +84,8 @@ class Forcing {
   std::string normal2DisoStr;
   int normal3Dani;
   std::string normal3DaniStr;
-  NormalBoundType normal3DaniBound;
+  IdefixHostArray1D<NormalBoundType> normal3DaniBoundHost;
+  IdefixArray1D<NormalBoundType> normal3DaniBound;
   std::string normal3DaniBoundStr;
   NormalBasis normal3DaniBasis;
   std::string normal3DaniBasisStr;
