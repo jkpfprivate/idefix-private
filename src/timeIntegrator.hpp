@@ -20,6 +20,7 @@ class TimeIntegrator {
 
   // Constructor from input and given datablock
   TimeIntegrator(Input &, DataBlock &);
+  TimeIntegrator();
 
   // Do one integration cycle
   void Cycle(DataBlock &);

@@ -39,6 +39,7 @@ class Output {
   friend class DumpImage; // Allow dumpimag to have access to dump API
  public:
   Output(Input &, DataBlock &);           // Create Output Object
+  Output();
   int CheckForWrites(DataBlock &);        // Check if outputs are needed at this stage
   bool RestartFromDump(DataBlock &, int);  // Restart from a dump file.
   void ForceWriteDump(DataBlock &);            // Force write dumps (needed during an abort)

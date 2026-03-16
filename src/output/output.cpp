@@ -16,6 +16,9 @@
 #include "pydefix.hpp"
 #endif
 
+Output::Output() {
+}
+
 Output::Output(Input &input, DataBlock &data)
 #ifdef WITH_PYTHON
 :pydefix(input)

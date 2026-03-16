@@ -11,6 +11,9 @@
 // Default setup functions. These are automatically redefined if the user provide her/his
 // own implementation of the constructor, initflow and destructor
 
+Setup::Setup() {
+}
+
 __attribute__((weak)) Setup::Setup(Input &input, Grid &grid, DataBlock &data, Output &output) {
   IDEFIX_WARNING("Caution, this is the default Setup constructor and it does nothing!");
 }

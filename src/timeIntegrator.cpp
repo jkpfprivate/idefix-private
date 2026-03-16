@@ -20,6 +20,9 @@
 #include "planetarySystem.hpp"
 
 
+TimeIntegrator::TimeIntegrator() {
+}
+
 TimeIntegrator::TimeIntegrator(Input & input, DataBlock & data) {
   idfx::pushRegion("TimeIntegrator::TimeIntegrator(Input...)");
 

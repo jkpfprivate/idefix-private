@@ -124,6 +124,7 @@ class DataBlock {
 
 
   DataBlock(Grid &, Input &);     ///< init from a Grid object
+  DataBlock();
   explicit DataBlock(SubGrid *);           ///< init a minimal datablock for a subgrid
 
   void ExtractSubdomain();        ///< initialise datablock sub-domain according to domain decomp.

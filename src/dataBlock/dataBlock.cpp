@@ -19,6 +19,9 @@
 #include "xdmf.hpp"
 #endif
 
+DataBlock::DataBlock() {
+}
+
 DataBlock::DataBlock(Grid &grid, Input &input) {
   idfx::pushRegion("DataBlock::DataBlock");
 

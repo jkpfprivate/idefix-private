@@ -22,6 +22,8 @@ target_sources(idefix
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/loop.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/macros.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+  PUBLIC ${CMAKE_CURRENT_LIST_DIR}/myIdefix.hpp
+  PUBLIC ${CMAKE_CURRENT_LIST_DIR}/myIdefix.cpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/profiler.cpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/profiler.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/real_types.hpp
