@@ -15,8 +15,6 @@
 //@HEADER
 */
 
-#include <Kokkos_Core.hpp>
-
 #include "myIdefix.hpp"
 
 int main( int argc, char* argv[] ) {

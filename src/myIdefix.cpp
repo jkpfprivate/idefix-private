@@ -64,30 +64,31 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     // Initialization
     ///////////////////////////////
 
-    this->input = Input(argc, argv);
-    input.PrintLogo();
+    input = std::make_unique<Input>(argc, argv);
+    input->PrintLogo();
     idfx::cout << "Main: initialization stage." << std::endl;
 
     // Init the units when needed
-    idfx::units.Init(input);
+    idfx::units.Init(*input);
 
     // Allocate the grid on device
-    this->grid = Grid(input);
+    grid = std::make_unique<Grid>(*input);
     // Allocate the grid image on host
-    this->gridHost = GridHost(grid);
+    gridHost = std::make_unique<GridHost>(*grid);
 
     // Actually make the grid on host and sync it on the device
-    gridHost.MakeGrid(input);
-    gridHost.SyncToDevice();
+    gridHost->MakeGrid(*input);
+    gridHost->SyncToDevice();
 
     // instantiate required objects.
-    this->data = DataBlock(grid, input);
-    this->Tint = TimeIntegrator(input,data);
+
+    data = std::make_unique<DataBlock>(*grid, *input);
+    Tint = std::make_unique<TimeIntegrator>(*input, *data);
     #ifdef WITH_PYTHON
-      this->pydefix = Pydefix(input);
+      pydefix = std::make_unique<Pydefix>(*input);
     #endif
-    this->output = Output(input, data);
-    this->mysetup = Setup(input, grid, data, output);
+    output = std::make_unique<Output>(*input, *data);
+    mysetup = std::make_unique<Setup>(*input, *grid, *data, *output);
 
     idfx::cout << "Main: initialisation finished." << std::endl;
 
@@ -103,11 +104,11 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
       idfx::cout << "Main: detected your configuration needed Kokkos to be initialised before MPI. "
                  << std::endl;
     }
-    input.ShowConfig();
+    input->ShowConfig();
     idfx::units.ShowConfig();
-    grid.ShowConfig();
-    data.ShowConfig();
-    Tint.ShowConfig();
+    grid->ShowConfig();
+    data->ShowConfig();
+    Tint->ShowConfig();
     #ifdef WITH_PYTHON
     pydefix.ShowConfig();
     #endif
@@ -116,53 +117,53 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     // Initial conditions (or restart)
     ///////////////////////////////
     // Are we restarting?
-    if(input.restartRequested) {
-      if(input.forceInitRequested) {
+    if(input->restartRequested) {
+      if(input->forceInitRequested) {
         #ifdef WITH_PYTHON
           if(pydefix.haveInitflow) {
             idfx::pushRegion("Pydefix::Initflow");
-            pydefix.InitFlow(data);
+            pydefix.InitFlow(*data);
           } else {
             idfx::pushRegion("Setup::Initflow");
-            mysetup.InitFlow(data);
+            mysetup->InitFlow(*data);
           }
-          data.DeriveVectorPotential();
+          data->DeriveVectorPotential();
           idfx::popRegion();
         #else
           idfx::pushRegion("Setup::Initflow");
-          mysetup.InitFlow(data);
-          data.DeriveVectorPotential();
+          mysetup->InitFlow(*data);
+          data->DeriveVectorPotential();
           idfx::popRegion();
         #endif
       }
       idfx::cout << "Main: Restarting from dump file."  << std::endl;
-      bool restartSuccess = output.RestartFromDump(data,input.restartFileNumber);
+      bool restartSuccess = output->RestartFromDump(*data,input->restartFileNumber);
       if(!restartSuccess) {
         idfx::cout << "Main: restart aborted." << std::endl;
-        input.restartRequested = false;
+        input->restartRequested = false;
       } else {
-        data.SetBoundaries();
+        data->SetBoundaries();
       }
     }
-    if(!input.restartRequested) {
+    if(!input->restartRequested) {
       idfx::cout << "Main: Creating initial conditions." << std::endl;
       #ifdef WITH_PYTHON
         if(pydefix.haveInitflow) {
           idfx::pushRegion("Pydefix::Initflow");
-          pydefix.InitFlow(data);
+          pydefix.InitFlow(*data);
         } else {
           idfx::pushRegion("Setup::Initflow");
-          mysetup.InitFlow(data);
+          mysetup->InitFlow(*data);
         }
       #else
         idfx::pushRegion("Setup::Initflow");
-        mysetup.InitFlow(data);
+        mysetup->InitFlow(*data);
       #endif
       idfx::popRegion();
-      data.DeriveVectorPotential();   // This does something only when evolveVectorPotential is on
-      data.SetBoundaries();
-      data.Validate();
-      output.CheckForWrites(data);
+      data->DeriveVectorPotential();   // This does something only when evolveVectorPotential is on
+      data->SetBoundaries();
+      data->Validate();
+      output->CheckForWrites(*data);
     }
 }
 
@@ -172,14 +173,14 @@ void MyIdefix::DoMainLoop() {
     ///////////////////////////////
     idfx::cout << "Main: Cycling Time Integrator..." << std::endl;
 
-    output.ResetTimer();
+    output->ResetTimer();
 
-    this->tstop = input.Get<real>("TimeIntegrator","tstop",0);
+    this->tstop = input->Get<real>("TimeIntegrator","tstop",0);
 
-    while(data.t < tstop) {
-      if(tstop-data.t < data.dt) data.dt = tstop-data.t;
+    while(data->t < tstop) {
+      if(tstop-data->t < data->dt) data->dt = tstop-data->t;
       try {
-        Tint.Cycle(data);
+        Tint->Cycle(*data);
       } catch(std::exception &e) {
         idfx::cout << "Main: WARNING! Caught an exception in TimeIntegrator." << std::endl;
         #ifdef WITH_MPI
@@ -193,20 +194,20 @@ void MyIdefix::DoMainLoop() {
         #endif
         idfx::cout << e.what() << std::endl;
         idfx::cout << "Main: attempting to save the current state for inspection." << std::endl;
-        output.ForceWriteVtk(data);
+        output->ForceWriteVtk(*data);
         idfx::cout << "Main: Aborting current calculation." << std::endl;
         returnCode = 1;
         break;
       }
-      output.CheckForWrites(data);
-      if(input.CheckForAbort() || Tint.CheckForMaxRuntime() ) {
+      output->CheckForWrites(*data);
+      if(input->CheckForAbort() || Tint->CheckForMaxRuntime() ) {
         idfx::cout << "Main: Saving current state and aborting calculation." << std::endl;
-        output.ForceWriteDump(data);
+        output->ForceWriteDump(*data);
         returnCode = -1;
         break;
       }
-      if(input.maxCycles>=0) {
-        if(Tint.GetNCycles() >= input.maxCycles) {
+      if(input->maxCycles>=0) {
+        if(Tint->GetNCycles() >= input->maxCycles) {
           idfx::cout << "Main: Reached maximum number of integration cycles." << std::endl;
           break;
         }
@@ -223,10 +224,10 @@ void MyIdefix::DoMainLoop() {
     n_minutes = divres.quot;
     n_seconds = divres.rem;
 
-    double perfs = timer.seconds() / grid.np_int[IDIR] / grid.np_int[JDIR]
-                            / grid.np_int[KDIR] / Tint.GetNCycles() * idfx::psize;
+    double perfs = timer.seconds() / grid->np_int[IDIR] / grid->np_int[JDIR]
+                            / grid->np_int[KDIR] / Tint->GetNCycles() * idfx::psize;
 
-    idfx::cout << "Main: Reached t=" << data.t << std::endl;
+    idfx::cout << "Main: Reached t=" << data->t << std::endl;
     idfx::cout << "Main: Completed in ";
     if (n_days > 0) {
       idfx::cout << n_days << " day";
@@ -254,8 +255,8 @@ void MyIdefix::DoMainLoop() {
       idfx::cout << "s";
     }
     idfx::cout << " ";
-    idfx::cout << "and " << Tint.GetNCycles() << " cycle";
-    if (Tint.GetNCycles() != 1) {
+    idfx::cout << "and " << Tint->GetNCycles() << " cycle";
+    if (Tint->GetNCycles() != 1) {
       idfx::cout << "s";
     }
     idfx::cout << std::endl;
@@ -268,7 +269,7 @@ void MyIdefix::DoMainLoop() {
     #endif
 
     idfx::cout << "Outputs represent "
-               << static_cast<int>(100.0*output.GetTimer()/timer.seconds())
+               << static_cast<int>(100.0*output->GetTimer()/timer.seconds())
               << "% of total run time." << std::endl;
     // Show profiler output
     idfx::prof.Show();

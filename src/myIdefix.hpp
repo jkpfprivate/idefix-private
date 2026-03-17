@@ -31,16 +31,16 @@ class MyIdefix {
   int returnCode;
   real tstop;
   Kokkos::Timer timer;
-  Input input;
-  Grid grid;
-  GridHost gridHost;
-  DataBlock data;
-  TimeIntegrator Tint;
+  std::unique_ptr<Input> input;
+  std::unique_ptr<Grid> grid;
+  std::unique_ptr<GridHost> gridHost;
+  std::unique_ptr<DataBlock> data;
+  std::unique_ptr<TimeIntegrator> Tint;
 #ifdef WITH_PYTHON
-  Pydefix pydefix;
+  std::unique_ptr<Pydefix> pydefix;
 #endif
-  Output output;
-  Setup mysetup;
+  std::unique_ptr<Output> output;
+  std::unique_ptr<Setup> mysetup;
 };
-#endif // OUTPUT_OUTPUT_HPP_
+#endif // MYIDEFIX_HPP_
 
