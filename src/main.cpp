@@ -15,12 +15,51 @@
 //@HEADER
 */
 
+#include <Kokkos_Core.hpp>
+
 #include "myIdefix.hpp"
 
 int main( int argc, char* argv[] ) {
+
+  int initKokkosBeforeMPI = false;
+
+  // return code is zero if the simulation reached final time
+  // >0 if a fatal error occured (too small timestep, Nans)
+  // <0 if simulation was interrupted (max_runtime or user-triggered interruption
+  int returnCode = 0;
+
+  // When running on GPUS with Omnipath network,
+  // Kokkos needs to be initialised *before* the MPI layer
+#ifdef KOKKOS_ENABLE_CUDA
+  if(std::getenv("PSM2_CUDA") != NULL) {
+    initKokkosBeforeMPI = true;
+  }
+#endif
+
+  if(initKokkosBeforeMPI)  Kokkos::initialize( argc, argv );
+
+#ifdef WITH_MPI
+  MPI_Init(&argc,&argv);
+#endif
+
+  if(!initKokkosBeforeMPI) Kokkos::initialize( argc, argv );
+
+{
   MyIdefix idefix(argc, argv);
-  idefix.Initialise(argc, argv);
   idefix.DoMainLoop();
-  idefix.Finalise();
+}
+
+  if(returnCode<0) {
+    idfx::cout << "Main: Job was interrupted before completion." << std::endl;
+  } else if (returnCode>0) {
+    idfx::cout << "Main: Job was aborted because of an unrecoverable error." << std::endl;
+  } else {
+    idfx::cout << "Main: Job completed successfully." << std::endl;
+  }
+  Kokkos::finalize();
+
+#ifdef WITH_MPI
+  MPI_Finalize();
+#endif
   return(0);
 }

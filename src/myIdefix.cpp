@@ -33,29 +33,7 @@
 #endif
 
 MyIdefix::MyIdefix(int argc, char* argv[]) {
-
-  this->initKokkosBeforeMPI = false;
-
-  // return code is zero if the simulation reached final time
-  // >0 if a fatal error occured (too small timestep, Nans)
-  // <0 if simulation was interrupted (max_runtime or user-triggered interruption
-  this->returnCode = 0;
-
-  // When running on GPUS with Omnipath network,
-  // Kokkos needs to be initialised *before* the MPI layer
-#ifdef KOKKOS_ENABLE_CUDA
-  if(std::getenv("PSM2_CUDA") != NULL) {
-    initKokkosBeforeMPI = true;
-  }
-#endif
-
-  if(initKokkosBeforeMPI)  Kokkos::initialize( argc, argv );
-
-#ifdef WITH_MPI
-  MPI_Init(&argc,&argv);
-#endif
-
-  if(!initKokkosBeforeMPI) Kokkos::initialize( argc, argv );
+  Initialise(argc, argv);
 }
 
 void MyIdefix::Initialise(int argc, char* argv[]) {
@@ -110,7 +88,7 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     data->ShowConfig();
     Tint->ShowConfig();
     #ifdef WITH_PYTHON
-    pydefix.ShowConfig();
+    pydefix->ShowConfig();
     #endif
 
     ///////////////////////////////
@@ -120,9 +98,9 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     if(input->restartRequested) {
       if(input->forceInitRequested) {
         #ifdef WITH_PYTHON
-          if(pydefix.haveInitflow) {
+          if(pydefix->haveInitflow) {
             idfx::pushRegion("Pydefix::Initflow");
-            pydefix.InitFlow(*data);
+            pydefix->InitFlow(*data);
           } else {
             idfx::pushRegion("Setup::Initflow");
             mysetup->InitFlow(*data);
@@ -148,9 +126,9 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     if(!input->restartRequested) {
       idfx::cout << "Main: Creating initial conditions." << std::endl;
       #ifdef WITH_PYTHON
-        if(pydefix.haveInitflow) {
+        if(pydefix->haveInitflow) {
           idfx::pushRegion("Pydefix::Initflow");
-          pydefix.InitFlow(*data);
+          pydefix->InitFlow(*data);
         } else {
           idfx::pushRegion("Setup::Initflow");
           mysetup->InitFlow(*data);
@@ -276,17 +254,5 @@ void MyIdefix::DoMainLoop() {
 }
 
 void MyIdefix::Finalise() {
-  if(returnCode<0) {
-    idfx::cout << "Main: Job was interrupted before completion." << std::endl;
-  } else if (returnCode>0) {
-    idfx::cout << "Main: Job was aborted because of an unrecoverable error." << std::endl;
-  } else {
-    idfx::cout << "Main: Job completed successfully." << std::endl;
-  }
-  Kokkos::finalize();
-
-#ifdef WITH_MPI
-  MPI_Finalize();
-#endif
 }
 
