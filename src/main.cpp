@@ -46,7 +46,10 @@ int main( int argc, char* argv[] ) {
 
 {
   MyIdefix idefix(argc, argv);
-  idefix.DoMainLoop();
+  if (idefix.haveDNS) idefix.PerformDNS();
+  else if (idefix.haveNewton) idefix.PerformNewton();
+  else if (idefix.haveStability) idefix.PerformStability();
+  else if (idefix.haveContinuation) idefix.PerformContinuation();
 }
 
   if(returnCode<0) {

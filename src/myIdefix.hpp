@@ -23,14 +23,22 @@ class MyIdefix {
  public:
   MyIdefix(int, char**);
   void Initialise(int, char**);
-  void DoMainLoop();
+  void PerformDNS();
+  void PerformNewton();
+  void PerformStability();
+  void PerformContinuation();
   void Finalise();
 
+  bool haveDNS;
+  bool haveNewton;
+  bool haveStability;
+  bool haveContinuation;
  private:
   bool initKokkosBeforeMPI;
   int returnCode;
   real tstop;
   Kokkos::Timer timer;
+
   std::unique_ptr<Input> input;
   std::unique_ptr<Grid> grid;
   std::unique_ptr<GridHost> gridHost;

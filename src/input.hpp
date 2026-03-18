@@ -35,6 +35,12 @@ class Input {
 
   int CheckEntry(std::string, std::string);             ///< Check that a block+entry is present
                                                         ///< in the input file
+
+  bool haveDNS;
+  bool haveNewton;
+  bool haveStability;
+  bool haveContinuation;
+
   template<typename T>
   T Get(std::string, std::string, int);                 ///< read a variable from the input file
                                                         ///< (abort if not found)

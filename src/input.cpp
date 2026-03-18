@@ -44,6 +44,11 @@ Input::Input(int argc, char* argv[] ) {
   std::stringstream msg;
   int nParameters = 0;    // # of parameters in current block
 
+  haveDNS = false;
+  haveNewton = false;
+  haveStability = false;
+  haveContinuation = false;
+
   // Tell the system we want to catch the SIGUSR2 signals
   signal(SIGUSR2, signalHandler);
 
@@ -115,8 +120,20 @@ void Input::ParseCommandLine(int argc, char **argv) {
   std::stringstream msg;
   bool enableLogs = true;
   for(int i = 1 ; i < argc ; i++) {
+    if(std::string(argv[i]) == "-dns") {
+      this->haveDNS = true;
+    }
+    else if(std::string(argv[i]) == "-newton") {
+      this->haveNewton = true;
+    }
+    else if(std::string(argv[i]) == "-stability") {
+      this->haveStability = true;
+    }
+    else if(std::string(argv[i]) == "-continuation") {
+      this->haveContinuation = true;
+    }
     // MPI decomposition argument
-    if(std::string(argv[i]) == "-dec") {
+    else if(std::string(argv[i]) == "-dec") {
       #ifndef WITH_MPI
       IDEFIX_ERROR("Domain decomposition option '-dec' only makes sense when MPI is enabled");
       #endif
@@ -381,6 +398,14 @@ void Input::PrintLogo() {
 
 void Input::PrintOptions() {
   idfx::cout << "List of valid arguments:" << std::endl << std::endl;
+  idfx::cout << " -dns" << std::endl;
+  idfx::cout << "         Perform a DNS." << std::endl;
+  idfx::cout << " -newton" << std::endl;
+  idfx::cout << "         Perform a Newton convergence." << std::endl;
+  idfx::cout << " -stability" << std::endl;
+  idfx::cout << "         Perform a stability analysis." << std::endl;
+  idfx::cout << " -continuation" << std::endl;
+  idfx::cout << "         Perform a continuation." << std::endl;
   #ifdef WITH_MPI
     idfx::cout << " -dec "
     D_SELECT(<< " nx1 ",

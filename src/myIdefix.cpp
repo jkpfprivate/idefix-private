@@ -46,6 +46,11 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     input->PrintLogo();
     idfx::cout << "Main: initialization stage." << std::endl;
 
+    haveDNS = input->haveDNS;
+    haveNewton = input->haveNewton;
+    haveStability = input->haveStability;
+    haveContinuation = input->haveContinuation;
+
     // Init the units when needed
     idfx::units.Init(*input);
 
@@ -145,7 +150,7 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     }
 }
 
-void MyIdefix::DoMainLoop() {
+void MyIdefix::PerformDNS() {
     ///////////////////////////////
     // Main Loop
     ///////////////////////////////
@@ -251,6 +256,18 @@ void MyIdefix::DoMainLoop() {
               << "% of total run time." << std::endl;
     // Show profiler output
     idfx::prof.Show();
+}
+
+void MyIdefix::PerformNewton() {
+  idfx::cout << "I've been asked to perform Newton but it's not yet coded." << std::endl;
+}
+
+void MyIdefix::PerformStability() {
+  idfx::cout << "I've been asked to perform a stability analysis but it's not yet coded." << std::endl;
+}
+
+void MyIdefix::PerformContinuation() {
+  idfx::cout << "I've been asked to perform a continuation but it's not yet coded." << std::endl;
 }
 
 void MyIdefix::Finalise() {
