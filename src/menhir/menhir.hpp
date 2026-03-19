@@ -5,8 +5,8 @@
 // Licensed under CeCILL 2.1 License, see COPYING for more information
 // ***********************************************************************************
 
-#ifndef MYIDEFIX_HPP_
-#define MYIDEFIX_HPP_
+#ifndef MENHIR_HPP_
+#define MENHIR_HPP_
 #include "idefix.hpp"
 #include "input.hpp"
 #include "grid.hpp"
@@ -19,9 +19,9 @@
 #endif
 #include "output.hpp"
 
-class MyIdefix {
+class Menhir {
  public:
-  MyIdefix(int, char**);
+  Menhir(int, char**);
   void Initialise(int, char**);
   void PerformDNS();
   void PerformNewton();
@@ -50,5 +50,5 @@ class MyIdefix {
   std::unique_ptr<Output> output;
   std::unique_ptr<Setup> mysetup;
 };
-#endif // MYIDEFIX_HPP_
+#endif // MENHIR_HPP_
 

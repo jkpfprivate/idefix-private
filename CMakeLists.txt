@@ -217,6 +217,7 @@ target_include_directories(idefix PUBLIC
                            )
 target_include_directories(idefix PUBLIC
                            src/kokkos/core/src
+                           src/menhir
                            src/dataBlock
                            src/dataBlock/planetarySystem
                            src/fluid
@@ -238,6 +239,7 @@ target_include_directories(idefix PUBLIC
                            )
 
 target_link_libraries(idefix Kokkos::kokkos)
+set_target_properties(idefix PROPERTIES OUTPUT_NAME "menhir")
 
 message(STATUS "Idefix final configuration")
 if(Idefix_EVOLVE_VECTOR_POTENTIAL)

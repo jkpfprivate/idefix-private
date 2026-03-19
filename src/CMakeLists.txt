@@ -4,6 +4,7 @@ add_subdirectory(dataBlock)
 add_subdirectory(output)
 add_subdirectory(rkl)
 add_subdirectory(gravity)
+add_subdirectory(menhir)
 add_subdirectory(utils)
 
 target_sources(idefix
@@ -22,8 +23,6 @@ target_sources(idefix
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/loop.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/macros.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/main.cpp
-  PUBLIC ${CMAKE_CURRENT_LIST_DIR}/myIdefix.hpp
-  PUBLIC ${CMAKE_CURRENT_LIST_DIR}/myIdefix.cpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/profiler.cpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/profiler.hpp
   PUBLIC ${CMAKE_CURRENT_LIST_DIR}/real_types.hpp

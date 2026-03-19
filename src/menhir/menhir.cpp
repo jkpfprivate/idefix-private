@@ -17,7 +17,7 @@
 #include <string>
 
 #include "idefix.hpp"
-#include "myIdefix.hpp"
+#include "menhir.hpp"
 #include "profiler.hpp"
 #include "input.hpp"
 #include "units.hpp"
@@ -32,11 +32,11 @@
 #include "mpi.hpp"
 #endif
 
-MyIdefix::MyIdefix(int argc, char* argv[]) {
+Menhir::Menhir(int argc, char* argv[]) {
   Initialise(argc, argv);
 }
 
-void MyIdefix::Initialise(int argc, char* argv[]) {
+void Menhir::Initialise(int argc, char* argv[]) {
     idfx::initialize();
     ///////////////////////////////
     // Initialization
@@ -150,7 +150,7 @@ void MyIdefix::Initialise(int argc, char* argv[]) {
     }
 }
 
-void MyIdefix::PerformDNS() {
+void Menhir::PerformDNS() {
     ///////////////////////////////
     // Main Loop
     ///////////////////////////////
@@ -258,18 +258,18 @@ void MyIdefix::PerformDNS() {
     idfx::prof.Show();
 }
 
-void MyIdefix::PerformNewton() {
+void Menhir::PerformNewton() {
   idfx::cout << "I've been asked to perform Newton but it's not yet coded." << std::endl;
 }
 
-void MyIdefix::PerformStability() {
+void Menhir::PerformStability() {
   idfx::cout << "I've been asked to perform a stability analysis but it's not yet coded." << std::endl;
 }
 
-void MyIdefix::PerformContinuation() {
+void Menhir::PerformContinuation() {
   idfx::cout << "I've been asked to perform a continuation but it's not yet coded." << std::endl;
 }
 
-void MyIdefix::Finalise() {
+void Menhir::Finalise() {
 }
 

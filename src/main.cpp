@@ -17,7 +17,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "myIdefix.hpp"
+#include "menhir.hpp"
 
 int main( int argc, char* argv[] ) {
 
@@ -45,11 +45,11 @@ int main( int argc, char* argv[] ) {
   if(!initKokkosBeforeMPI) Kokkos::initialize( argc, argv );
 
 {
-  MyIdefix idefix(argc, argv);
-  if (idefix.haveDNS) idefix.PerformDNS();
-  else if (idefix.haveNewton) idefix.PerformNewton();
-  else if (idefix.haveStability) idefix.PerformStability();
-  else if (idefix.haveContinuation) idefix.PerformContinuation();
+  Menhir menhir(argc, argv);
+  if (menhir.haveDNS) menhir.PerformDNS();
+  else if (menhir.haveNewton) menhir.PerformNewton();
+  else if (menhir.haveStability) menhir.PerformStability();
+  else if (menhir.haveContinuation) menhir.PerformContinuation();
 }
 
   if(returnCode<0) {
