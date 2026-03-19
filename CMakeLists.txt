@@ -88,6 +88,11 @@ if(EXISTS ${PROJECT_BINARY_DIR}/CMakeLists.txt)
   add_subdirectory(${PROJECT_BINARY_DIR} build/setup)
 endif()
 
+target_include_directories(idefix PUBLIC $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include $ENV{PETSC_DIR}/include)
+#target_link_libraries(idefix -Wl,-rpath,/home/jkempf/src/petsc/arch-linux-c-debug/lib -L/home/jkempf/src/petsc/arch-linux-c-debug/lib -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib/fortran/gfortran -L/usr/lib/x86_64-linux-gnu/openmpi/lib/fortran/gfortran -Wl,-rpath,/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/gcc/x86_64-linux-gnu/13 -lpetsc -llapack -lblas -lm -lX11 -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi -lopen-rte -lopen-pal -lhwloc -levent_core -levent_pthreads -lgfortran -lm -lz -lgfortran -lm -lgfortran -lgcc_s -lquadmath -lstdc++ -lquadmath) ### To simplify maybe? Just a suggestion?
+target_link_libraries(idefix -Wl,-rpath,/home/jkempf/src/petsc/arch-linux-c-debug/lib -L/home/jkempf/src/petsc/arch-linux-c-debug/lib -lpetsc -llapack -lblas) ### seems to be working
+target_link_libraries(idefix -Wl,-rpath,/home/jkempf/src/slepc/arch-linux-c-debug/lib -L/home/jkempf/src/slepc/arch-linux-c-debug/lib -L/home/jkempf/src/slepc/arch-linux-c-debug/lib -lslepc)
+target_include_directories(idefix PUBLIC $ENV{SLEPC_DIR}/$ENV{SLEPC_ARCH}/include $ENV{SLEPC_DIR}/include)
 
 if(Idefix_MHD)
   add_compile_definitions("MHD=YES")
@@ -95,7 +100,7 @@ else()
   add_compile_definitions("MHD=NO")
 endif()
 
-if(Idefix_MPI)
+#if(Idefix_MPI) ### getting rid of MPI option, always activate it since SLEPC/PETSC is compiled with this option
   add_compile_definitions("WITH_MPI")
   find_package(MPI REQUIRED)
   target_link_libraries(idefix MPI::MPI_CXX)
@@ -103,7 +108,7 @@ if(Idefix_MPI)
     PUBLIC src/mpi.cpp
     PUBLIC src/mpi.hpp
   )
-endif()
+#endif()
 
 if(Idefix_HDF5)
   add_compile_definitions("WITH_HDF5")

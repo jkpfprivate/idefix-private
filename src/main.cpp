@@ -17,6 +17,9 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <petsc.h>
+#include <slepc.h>
+
 #include "menhir.hpp"
 
 int main( int argc, char* argv[] ) {
@@ -45,11 +48,24 @@ int main( int argc, char* argv[] ) {
   if(!initKokkosBeforeMPI) Kokkos::initialize( argc, argv );
 
 {
+
+  PetscErrorCode ierr;
+  static char help[] = "Menhir beta version\n\n";
+  ///////////////////////////////
+  // PETSC/SLEPC Initialization
+  ///////////////////////////////
+
+  PetscInitialize(&argc,&argv,(char *)0,help);
+  SlepcInitialize(&argc,&argv,(char *)0,help);
+
   Menhir menhir(argc, argv);
   if (menhir.haveDNS) menhir.PerformDNS();
   else if (menhir.haveNewton) menhir.PerformNewton();
   else if (menhir.haveStability) menhir.PerformStability();
   else if (menhir.haveContinuation) menhir.PerformContinuation();
+
+  ierr = SlepcFinalize();
+  ierr = PetscFinalize();// CHKERRV(ierr);
 }
 
   if(returnCode<0) {

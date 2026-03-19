@@ -16,6 +16,9 @@
 #include <cstring>
 #include <string>
 
+//#include <petsc.h>
+//#include <slepc.h>
+
 #include "idefix.hpp"
 #include "menhir.hpp"
 #include "profiler.hpp"
@@ -39,7 +42,7 @@ Menhir::Menhir(int argc, char* argv[]) {
 void Menhir::Initialise(int argc, char* argv[]) {
     idfx::initialize();
     ///////////////////////////////
-    // Initialization
+    // Idefix Initialization
     ///////////////////////////////
 
     input = std::make_unique<Input>(argc, argv);
