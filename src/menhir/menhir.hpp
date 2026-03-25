@@ -23,11 +23,13 @@ class Menhir {
  public:
   Menhir(int, char**);
   void Initialise(int, char**);
-  void PerformDNS();
+  void PerformDNS(real);
   void PerformNewton();
   void PerformStability();
   void PerformContinuation();
   void Finalise();
+  std::unique_ptr<DataBlock> data;
+  std::unique_ptr<Output> output;
 
   bool haveDNS;
   bool haveNewton;
@@ -42,12 +44,10 @@ class Menhir {
   std::unique_ptr<Input> input;
   std::unique_ptr<Grid> grid;
   std::unique_ptr<GridHost> gridHost;
-  std::unique_ptr<DataBlock> data;
   std::unique_ptr<TimeIntegrator> Tint;
 #ifdef WITH_PYTHON
   std::unique_ptr<Pydefix> pydefix;
 #endif
-  std::unique_ptr<Output> output;
   std::unique_ptr<Setup> mysetup;
 };
 #endif // MENHIR_HPP_

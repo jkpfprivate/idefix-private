@@ -21,6 +21,7 @@
 
 #include "idefix.hpp"
 #include "menhir.hpp"
+#include "newton.hpp"
 #include "profiler.hpp"
 #include "input.hpp"
 #include "units.hpp"
@@ -153,7 +154,7 @@ void Menhir::Initialise(int argc, char* argv[]) {
     }
 }
 
-void Menhir::PerformDNS() {
+void Menhir::PerformDNS(real stopping_time) {
     ///////////////////////////////
     // Main Loop
     ///////////////////////////////
@@ -161,7 +162,9 @@ void Menhir::PerformDNS() {
 
     output->ResetTimer();
 
-    this->tstop = input->Get<real>("TimeIntegrator","tstop",0);
+    int tstop;
+    if (stopping_time < 0.) tstop = input->Get<real>("TimeIntegrator","tstop",0);
+    else tstop = stopping_time;
 
     while(data->t < tstop) {
       if(tstop-data->t < data->dt) data->dt = tstop-data->t;

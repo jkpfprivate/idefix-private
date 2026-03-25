@@ -59,7 +59,7 @@ int main( int argc, char* argv[] ) {
   SlepcInitialize(&argc,&argv,(char *)0,help);
 
   Menhir menhir(argc, argv);
-  if (menhir.haveDNS) menhir.PerformDNS();
+  if (menhir.haveDNS) menhir.PerformDNS(-1.);
   else if (menhir.haveNewton) menhir.PerformNewton();
   else if (menhir.haveStability) menhir.PerformStability();
   else if (menhir.haveContinuation) menhir.PerformContinuation();
