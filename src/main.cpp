@@ -21,6 +21,7 @@
 #include <slepc.h>
 
 #include "menhir.hpp"
+#include "newton.hpp"
 
 int main( int argc, char* argv[] ) {
 
@@ -60,7 +61,10 @@ int main( int argc, char* argv[] ) {
 
   Menhir menhir(argc, argv);
   if (menhir.haveDNS) menhir.PerformDNS(-1.);
-  else if (menhir.haveNewton) menhir.PerformNewton();
+  else if (menhir.haveNewton) {
+    Newton newton(argc, argv);
+    newton.Solve();
+  }
   else if (menhir.haveStability) menhir.PerformStability();
   else if (menhir.haveContinuation) menhir.PerformContinuation();
 

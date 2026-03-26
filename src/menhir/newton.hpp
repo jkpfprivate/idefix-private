@@ -15,6 +15,8 @@
 
 #define SEPARATOR "---------------------------------------------------------------"
 
+static PetscErrorCode SNESJacobianCallback(SNES, Vec, Mat, Mat, void*);
+
 class Newton : public Menhir {
  public:
   Newton(int, char**);
@@ -34,18 +36,21 @@ class Newton : public Menhir {
   bool fixedPoint;
 
   PetscBool CurrentlyConstructingJacobian = PETSC_FALSE;
-  private:
+
   /* Newton solver */
   PetscErrorCode Solve(void);
+  
+  /* Jacobian routine */
+//  PetscErrorCode SNESJacobian(SNES, Vec, Mat, Mat, void*);
+  PetscErrorCode SNESJacobian(SNES, Vec, Mat, Mat);
+
+ private:
   
   /* Initial guess function */
   PetscErrorCode SNESInitialGuess(Vec, void*);
   
   /* Nonlinear function */
   static PetscErrorCode SNESFunction(SNES, Vec, Vec, void*);
-  
-  /* Jacobian routine */
-  static PetscErrorCode SNESJacobian(SNES, Vec, Mat, Mat, void*);
   
   /* I/O and monitoring routines */
   static PetscErrorCode SNESMonitorFunc(SNES, PetscInt, PetscReal, void*);

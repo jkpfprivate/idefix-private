@@ -36,7 +36,10 @@ Newton::Newton(int argc, char* argv[]) : Menhir(argc, argv) {
   /* Newton Flag */
   NewtonFlag = 0;
 
-  Nconstraints = -1;
+  Nconstraints = 0;
+  Nmonitors = 0;
+  Ntotloc = data->np_int[IDIR] * data->np_int[JDIR] * data->np_int[KDIR] * ENG + Nconstraints;
+  Ntot = Ntotloc;
 //  SNESMatrixFree = true;
 }
 
@@ -125,7 +128,7 @@ PetscErrorCode Newton::Solve(){
 
   /* Set Jacobian evaluation routine */
   /* SNESFunction is used to estimate [J]X in the matrix-free version*/
-  ierr = SNESSetJacobian(snes,J,J,SNESJacobian,PETSC_NULLPTR); 
+  ierr = SNESSetJacobian(snes,J,J,SNESJacobianCallback,PETSC_NULLPTR); 
 
   /* Generate initial guess */
   ierr = SNESInitialGuess(X,PETSC_NULLPTR);
@@ -209,6 +212,7 @@ PetscErrorCode Newton::SNESInitialGuess(Vec X,void *ctx){
    ------------------------------------------------------------------------ */
 
 PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F,void *ctx){return 0;}
+PetscErrorCode SNESFunction(SNES snes,Vec X,Vec F,void *ctx){return 0;}
 
 //PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F,void *ctx){
 //
@@ -254,81 +258,87 @@ PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F,void *ctx){return 0;}
                          Evaluate Jacobian matrix
    ------------------------------------------------------------------------ */
 
-PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B,void *ctx){return 0;}
+PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B){
+//  int Ntot;
+//  bool CurrentlyConstructingJacobian;
 
-//PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B,void *ctx){
-//
-//  /* Input/Output variables */
-//  PetscErrorCode ierr;
-//  PetscScalar *X_v;
-//
-//  /* extra variables for FD estimate of Jacobian */
-//  int i,k;
-//  PetscInt *idx;
-//  PetscScalar *A;
-//  Vec Xinc,F,Finc;
-//  PetscScalar *Xinc_v,*F_v,*Finc_v;
-//
-//  /* FD estimate of Jacobian - coded here just for comparison with Carlo */
-//
-//  if (!SNESMatrixFree){
-//
-//    idx = (PetscInt *) malloc( sizeof(PetscInt) * Ntot);
-//    A = (PetscScalar *) malloc( sizeof(PetscScalar) * Ntot * Ntot) ;
-//    for (i=0 ; i < Ntot ; i++){
-//      idx[i] = 0. ;
-//      for (k=0 ; k < Ntot ; k++){
-//	A[k+Ntot*i]=0. ;
-//      }
-//    }
-//      
-//    CurrentlyConstructingJacobian=PETSC_TRUE;
-//    ierr = VecDuplicate(X,&Xinc); 
-//    ierr = VecDuplicate(X,&F); 
-//    ierr = VecDuplicate(X,&Finc); 
-//    
-//    ierr = SNESFunction(snes,X,F,PETSC_NULLPTR);
-//    for (k=0 ; k < Ntot ; k++){
-//      ierr = VecGetArray(X,&X_v); 
-//      ierr = VecGetArray(Xinc,&Xinc_v); 
-//      for (i=0 ; i < Ntot ; i++){ Xinc_v[i]=X_v[i];}
-//
-//     /* small increment */
-//      if (X_v[k] != 0.){Xinc_v[k]=1.001*X_v[k];}
-//      else {Xinc_v[k]=0.0001;}
-//
-//      ierr = VecRestoreArray(Xinc,&Xinc_v); 
-//      ierr = SNESFunction(snes,Xinc,Finc,PETSC_NULLPTR); 
-//      ierr = VecGetArray(Xinc,&Xinc_v); 
-//      ierr = VecGetArray(F,&F_v); 
-//      ierr = VecGetArray(Finc,&Finc_v); 
-//      
-//      /* WARNING: do we really want row-major format for Aik ? */
-//      for (i=0 ;  i < Ntot ; i++){A[k+Ntot*i]=(Finc_v[i]-F_v[i])/(Xinc_v[k]-X_v[k]);}
-//
-//      ierr = VecRestoreArray(X,&X_v); 
-//      ierr = VecRestoreArray(Xinc,&Xinc_v); 
-//      ierr = VecRestoreArray(F,&F_v); 
-//      ierr = VecRestoreArray(Finc,&Finc_v); 
-//    }
-//
-//    for (i=0 ; i < Ntot ; i++){idx[i]=i;}
-//    ierr = MatSetValues(J,Ntot,idx,Ntot,idx,A,INSERT_VALUES); 
-//    CurrentlyConstructingJacobian=PETSC_FALSE;
-//    free (A) ; free(idx) ;
-//
-//  }
-//
-//  /* END OF FD JACOBIAN SECTION */
-//
-//  /* Assemble matrix - Warning: these calls are required independently of
-//     the choice of a Matrix-Free implementation !!! */
-//
-//  ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY); 
-//  ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY); 
-//
-//  return 0;
-//}
+  /* Input/Output variables */
+  PetscErrorCode ierr;
+  PetscScalar *X_v;
+
+  /* extra variables for FD estimate of Jacobian */
+  int i,k;
+  PetscInt *idx;
+  PetscScalar *A;
+  Vec Xinc,F,Finc;
+  PetscScalar *Xinc_v,*F_v,*Finc_v;
+
+  /* FD estimate of Jacobian - coded here just for comparison with Carlo */
+
+  if (!SNESMatrixFree){
+
+    idx = (PetscInt *) malloc( sizeof(PetscInt) * Ntot);
+    A = (PetscScalar *) malloc( sizeof(PetscScalar) * Ntot * Ntot) ;
+    for (i=0 ; i < Ntot ; i++){
+      idx[i] = 0. ;
+      for (k=0 ; k < Ntot ; k++){
+	A[k+Ntot*i]=0. ;
+      }
+    }
+      
+    CurrentlyConstructingJacobian=PETSC_TRUE;
+    ierr = VecDuplicate(X,&Xinc); 
+    ierr = VecDuplicate(X,&F); 
+    ierr = VecDuplicate(X,&Finc); 
+    
+    ierr = SNESFunction(snes,X,F,PETSC_NULLPTR);
+    for (k=0 ; k < Ntot ; k++){
+      ierr = VecGetArray(X,&X_v); 
+      ierr = VecGetArray(Xinc,&Xinc_v); 
+      for (i=0 ; i < Ntot ; i++){ Xinc_v[i]=X_v[i];}
+
+     /* small increment */
+      if (X_v[k] != 0.){Xinc_v[k]=1.001*X_v[k];}
+      else {Xinc_v[k]=0.0001;}
+
+      ierr = VecRestoreArray(Xinc,&Xinc_v); 
+      ierr = SNESFunction(snes,Xinc,Finc,PETSC_NULLPTR); 
+      ierr = VecGetArray(Xinc,&Xinc_v); 
+      ierr = VecGetArray(F,&F_v); 
+      ierr = VecGetArray(Finc,&Finc_v); 
+      
+      /* WARNING: do we really want row-major format for Aik ? */
+      for (i=0 ;  i < Ntot ; i++){A[k+Ntot*i]=(Finc_v[i]-F_v[i])/(Xinc_v[k]-X_v[k]);}
+
+      ierr = VecRestoreArray(X,&X_v); 
+      ierr = VecRestoreArray(Xinc,&Xinc_v); 
+      ierr = VecRestoreArray(F,&F_v); 
+      ierr = VecRestoreArray(Finc,&Finc_v); 
+    }
+
+    for (i=0 ; i < Ntot ; i++){idx[i]=i;}
+    ierr = MatSetValues(J,Ntot,idx,Ntot,idx,A,INSERT_VALUES); 
+    CurrentlyConstructingJacobian=PETSC_FALSE;
+    free (A) ; free(idx) ;
+
+  }
+
+  /* END OF FD JACOBIAN SECTION */
+
+  /* Assemble matrix - Warning: these calls are required independently of
+     the choice of a Matrix-Free implementation !!! */
+
+  ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY); 
+  ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY); 
+
+  return 0;
+}
+
+static PetscErrorCode SNESJacobianCallback(SNES snes, Vec x, Mat J, Mat P, void *ctx)
+{
+    auto *self = static_cast<Newton*>(ctx);
+    return self->SNESJacobian(snes, x, J, P);
+}
 
 /* ------------------------------------------------------------------------ 
                          Monitor the Newton Solver
