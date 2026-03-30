@@ -67,6 +67,7 @@ int main( int argc, char* argv[] ) {
   }
   else if (menhir.haveStability) menhir.PerformStability();
   else if (menhir.haveContinuation) menhir.PerformContinuation();
+IDEFIX_ERROR("Here I am");
 
   ierr = SlepcFinalize();
   ierr = PetscFinalize();// CHKERRV(ierr);

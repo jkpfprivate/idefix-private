@@ -204,7 +204,7 @@ void Input::ParseCommandLine(int argc, char **argv) {
     } else {
       PrintOptions();
       msg << "Unknown option " << argv[i];
-      IDEFIX_ERROR(msg);
+      IDEFIX_WARNING(msg);
     }
   }
   if(enableLogs) {

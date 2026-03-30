@@ -26,7 +26,7 @@
 #define SNESNitmax 100
 #define SNESfevalmax 100000 
 
-#define SNESMonitorFunction SNESMonitorFunc  /* or SnesMonitorDefault */
+#define SNESMonitorFunction SNESMonitorFunction  /* or SnesMonitorDefault */
 
 /* KSP Solver Configuration */
 

@@ -16,6 +16,8 @@
 #define SEPARATOR "---------------------------------------------------------------"
 
 static PetscErrorCode SNESJacobianCallback(SNES, Vec, Mat, Mat, void*);
+static PetscErrorCode SNESFunctionCallback(SNES, Vec, Vec, void *);
+static PetscErrorCode SNESMonitorFunctionCallback(SNES, PetscInt, PetscReal, void*);
 
 class Newton : public Menhir {
  public:
@@ -26,6 +28,7 @@ class Newton : public Menhir {
   int Ntot;
   int Ntotloc;
   IdefixArray1D<real> constraints;
+  IdefixArray1D<real> constraints0;
   IdefixArray1D<real> monitor;
   std::string  SNESRestartFile;
   std::string  SNESIterationFile;
@@ -35,25 +38,28 @@ class Newton : public Menhir {
 //  bool SNESMatrixFree;
   bool fixedPoint;
 
-  PetscBool CurrentlyConstructingJacobian = PETSC_FALSE;
+  PetscBool currentlyConstructingJacobian = PETSC_FALSE;
 
   /* Newton solver */
   PetscErrorCode Solve(void);
   
   /* Jacobian routine */
-//  PetscErrorCode SNESJacobian(SNES, Vec, Mat, Mat, void*);
   PetscErrorCode SNESJacobian(SNES, Vec, Mat, Mat);
+  
+  /* Nonlinear function */
+  PetscErrorCode SNESFunction(SNES, Vec, Vec);
+
+  /* I/O and monitoring routines */
+  PetscErrorCode SNESMonitorFunction(SNES, PetscInt, PetscReal);
+
+  void print(IdefixArray4D<real> arr);
+  IdefixArray4D<real> newtonGuess;
 
  private:
   
   /* Initial guess function */
   PetscErrorCode SNESInitialGuess(Vec, void*);
   
-  /* Nonlinear function */
-  static PetscErrorCode SNESFunction(SNES, Vec, Vec, void*);
-  
-  /* I/O and monitoring routines */
-  static PetscErrorCode SNESMonitorFunc(SNES, PetscInt, PetscReal, void*);
   void SNESReadVec(Vec, std::string);
   void SNESWriteVec(Vec, PetscInt, std::string);
   void ShowConfig(struct Scal*);
@@ -66,7 +72,9 @@ class Newton : public Menhir {
   void ComputeSNESScalarResidual(IdefixArray4D<real>, IdefixArray1D<real>, IdefixArray1D<real>);
 
 //  /* Constraints data to formulate the augmented system */
-  IdefixArray4D<real> newtonGuess;
+  IdefixArray4D<real> field;
+  IdefixArray4D<real> field0;
+  IdefixArray4D<real> field1;
   int newtonGuessIts;
   int nvar;
   
