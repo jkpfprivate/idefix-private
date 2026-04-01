@@ -181,6 +181,7 @@ class Dump {
 
   // Create a Dump file from the current state of the code
   int Write(Output&);
+  int Write(Output&, std::string, int);
   // Read and load a dump file as current state of the code
   bool Read(Output&, int);
 
@@ -251,6 +252,8 @@ class Dump {
   void CreateMPIDataType(GridBox, bool);
 
   fs::path outputDirectory;
+
+  bool isSilent;
 };
 
 

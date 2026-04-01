@@ -34,25 +34,24 @@ Newton::Newton(int argc, char* argv[]) : Menhir(argc, argv) {
 
   fixedPoint = true;
 
-  nvar = ENG; //????
   newtonGuessIts = 0; //????
 
   Nconstraints = 0;
   Nmonitors = 0;
-  Ntotloc = data->np_int[IDIR] * data->np_int[JDIR] * data->np_int[KDIR] * nvar + Nconstraints;
+  Ntotloc = data->np_tot[IDIR] * data->np_tot[JDIR] * data->np_tot[KDIR] * nvar + Nconstraints;
   Ntot = Ntotloc;
 
   /* Newton Guess - Can be used by problem routines to compute residuals
      for extra constraints variables (e. g. Viswanath's ortho condition) */
-  newtonGuess = IdefixArray4D<real>("newtonGuess", nvar, data->np_int[KDIR], data->np_int[JDIR], data->np_int[IDIR]);
-  field = IdefixArray4D<real>("field", nvar, data->np_int[KDIR], data->np_int[JDIR], data->np_int[IDIR]);
-  field0 = IdefixArray4D<real>("field0", nvar, data->np_int[KDIR], data->np_int[JDIR], data->np_int[IDIR]);
-  field1 = IdefixArray4D<real>("field1", nvar, data->np_int[KDIR], data->np_int[JDIR], data->np_int[IDIR]);
+  fieldNewtonGuess = IdefixArray4D<real>("fieldNewtonGuess", nvar, data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  fieldResidual = IdefixArray4D<real>("fieldResidual", nvar, data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  fieldInitial = IdefixArray4D<real>("fieldInitial", nvar, data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  fieldMonitor = IdefixArray4D<real>("fieldMonitor", nvar, data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
+  fieldSaved = IdefixArray4D<real>("fieldSaved", nvar, data->np_tot[KDIR], data->np_tot[JDIR], data->np_tot[IDIR]);
   constraints = IdefixArray1D<real>("constraints", Nconstraints);
   constraints0 = IdefixArray1D<real>("constraints0", Nconstraints);
   monitor = IdefixArray1D<real>("monitor", Nmonitors);
-  
-//  SNESMatrixFree = true;
+
 }
 
 /* ------------------------------------------------------------------------ 
@@ -80,7 +79,7 @@ PetscErrorCode Newton::Solve(){
   Mat              J;
   PetscInt         i,its;
   PetscErrorCode   ierr;
-  SNESConvergedReason convreason;
+  SNESConvergedReason convReason;
   char solutionf[53];
 
   /* Set Newton flag to 1 */
@@ -110,7 +109,7 @@ PetscErrorCode Newton::Solve(){
   ierr = SNESGetKSP(snes,&ksp); 
   ierr = KSPSetType(ksp,SNESKSPMethod);  
   ierr = KSPSetTolerances(ksp,SNESKSPrtol,SNESKSPatol,SNESKSPdtol,SNESKSPNitmax);  
-//  ierr = KSPMonitorSet(ksp,SNESKSPMonitor,vf,PETSC_NULLPTR);
+  ierr = KSPMonitorSet(ksp,(PetscErrorCode (*)(KSP, PetscInt, PetscReal, void*)) SNESKSPMonitor,vf,PETSC_NULLPTR);
   ierr = KSPGMRESSetRestart(ksp,SNESKSPNrestart);
 
   /* KSP Preconditioner configuration */
@@ -120,10 +119,6 @@ PetscErrorCode Newton::Solve(){
   /* Create vector data structures; set corresponding routines */
   ierr = VecCreateMPI(MPI_COMM_WORLD,Ntotloc,Ntot,&X); 
   ierr = VecDuplicate(X,&F) ; 
-
-  /* Initialize Newton guess structures */
-//  AllocateField(&newtonguess.field);
-//  AllocateScal(&newtonguess.scal);
 
   /* Set function evaluation routine and vector */
   ierr = SNESSetFunction(snes,F,SNESFunctionCallback,this);
@@ -135,8 +130,7 @@ PetscErrorCode Newton::Solve(){
     ierr = MatMFFDSetFunctionError(J,SNESrerror);  
     ierr = MatMFFDDSSetUmin(J,SNESXmin);  
   }
-  else{ierr = MatCreateDense(MPI_COMM_WORLD,Ntot,Ntot,
-				Ntot,Ntot,PETSC_NULLPTR,&J);}
+  else{ierr = MatCreateDense(MPI_COMM_WORLD,Ntot,Ntot,Ntot,Ntot,PETSC_NULLPTR,&J);}
 
   /* Set Jacobian evaluation routine */
   /* SNESFunction is used to estimate [J]X in the matrix-free version*/
@@ -147,15 +141,14 @@ PetscErrorCode Newton::Solve(){
 
   /* Solve problem */
   ierr = SNESSolve(snes,PETSC_NULLPTR,X); 
-//IDEFIX_ERROR("Congratulations, you've finally reached the end of the SNESSolve function");
 
   /* Final I/O */  
-  ierr = SNESGetConvergedReason(snes,&convreason);
-  if (convreason > 0){
+  ierr = SNESGetConvergedReason(snes,&convReason);
+  if (convReason > 0){
     printf("Newton Solver has converged !\n");
 //    MPI_Printf("Newton Solver has converged !\n");
-    sprintf(solutionf,"%s",SNESSolutionFile);
-    SNESWriteVec(X,newtonGuessIts,solutionf);
+//    sprintf(solutionf,"%s",SNESSolutionFile);
+    SNESWriteVec(X,newtonGuessIts,SNESSolutionFile);
   }
   else{printf("Warning: Newton Solver has not converged !\n");}
               
@@ -164,10 +157,8 @@ PetscErrorCode Newton::Solve(){
 	     newtonGuessIts-1);
 
   /*  Free work space */
-//  DeAllocateField(&newtonguess.field);
-//  DeAllocateScal(&newtonguess.scal);
-//  ierr = MatDestroy(&J); ierr = VecDestroy(&X); 
-//  ierr = VecDestroy(&F); ierr = SNESDestroy(&snes); 
+  ierr = MatDestroy(&J); ierr = VecDestroy(&X); 
+  ierr = VecDestroy(&F); ierr = SNESDestroy(&snes); 
 
   return(0);
 }
@@ -178,15 +169,15 @@ PetscErrorCode Newton::Solve(){
 
 PetscErrorCode Newton::SNESInitialGuess(Vec X,void *ctx){
 
-  IdefixArray4D<real> field;
-//  struct Scal scal;
-  char restartf[53];
-
   /* Read State Vector from a file */
-  sprintf(restartf,"%s",SNESRestartFile);
   data->dump->Read(*output, 0);
 //  ReadField(field,restartf);
 //  ReadScal(&scal,restartf);
+
+//  mysetup->InitFlow(*data);
+  data->SetBoundaries();
+  data->Validate();
+  Copy(fieldInitial,data->hydro->Vc);
 
   /* its=-1 means that Newton has been called by another action i.e. continuation.
      We don't want to perform the next two operations in that case - They should 
@@ -207,14 +198,17 @@ PetscErrorCode Newton::SNESInitialGuess(Vec X,void *ctx){
   
   /* Once the scaling factors have been calculated, we can map fields and 
      scalars into X (these factors are used in the mapping ! */
+#if MHD == YES
+  data->hydro->boundary->ReconstructVcField(data->hydro->Vc);
+#endif //MHD == YES
+//  ShowVc();
   MapFieldForw(data->hydro->Vc,X); //MapScalForw(&scal,X);
+//  ShowX(X);
 
   /* Initialize the constraints with this initial guess */
-  MapFieldBack(X,newtonGuess);
+  MapFieldBack(X,fieldNewtonGuess);
 //  MapScalBack(X,&newtonguess.scal);
 //  newtonguess.scal.its=scal.its;
-
-print(newtonGuess);
 
   /* Write Newton action information to file */
 //  ShowConfig(&scal);
@@ -222,59 +216,47 @@ print(newtonGuess);
   return(0);
 }
 
-void Newton::print(IdefixArray4D<real> arr) {
-  idfx::cout << arr(0,0,0,0) << std::endl;
-}
-
 /* ------------------------------------------------------------------------ 
                           Compute nonlinear function
    ------------------------------------------------------------------------ */
-
-//PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F,void *ctx){return 0;}
-
 PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F) {
-//PetscErrorCode Newton::SNESFunction(SNES snes,Vec X,Vec F,void *ctx) {
-//PetscErrorCode SNESFunction(SNES snes,Vec X,Vec F,void *ctx) {
-
+//idfx::cout << "Entering SNESFunction" << std::endl;
   /* Variables */  
   KSP ksp;
   PetscErrorCode ierr;
   double *crhs,*extravars;
   PetscInt i,its;
-  KSPConvergedReason convreason;
-
-//  newtonGuess = IdefixArray4D<real>("newtonGuess", nvar, data->np_int[KDIR], data->np_int[JDIR], data->np_int[IDIR]);
-
-//// TO BE INITIALISED!!!!
-//  IdefixArray4D<real> field0, field1;
-//  IdefixArray1D<real> constraints0;
+  KSPConvergedReason convReason;
 
   /* Book-keeping of running Newton guess after the Krylov solver calls
      to the function: this is required to compute the correct residual before
      the next newton iteration */
   ierr = SNESGetKSP(snes,&ksp); 
-  ierr = KSPGetConvergedReason(ksp,&convreason); 
+  ierr = KSPGetConvergedReason(ksp,&convReason); 
 
 //  if (true){    
-  if ((convreason > 0) && (!currentlyConstructingJacobian)){    
-    MapFieldBack(X,newtonGuess);
-  MapFieldBack(X,field0); //MapScalBack(X,&scal0);
+  if ((convReason > 0) && (!currentlyConstructingJacobian)){    
+    MapFieldBack(X,fieldNewtonGuess);
 //    MapScalBack(X,&newtonguess.scal);
   }
 
   /* Calculate function - start by transforming back to field/scalar structures */
-  MapFieldBack(X,field0); //MapScalBack(X,&scal0);
+  MapFieldBack(X,fieldInitial); //MapScalBack(X,&scal0);
   
   /* Compute Field components of the Residual of the total system 
      i.e. integrate in time, take difference etc. */
-  ComputeSNESFieldResidual(field0,constraints0,field1);
+  ComputeSNESFieldResidual();
 
-  /* ! Solvability conditions (i.e. Viswanath-like condition etc.) */
-  ComputeSNESScalarResidual(field0,constraints0,constraints);
+//  /* ! Solvability conditions (i.e. Viswanath-like condition etc.) */
+//  ComputeSNESScalarResidual(fieldInitial,constraints0,constraints);
 
   /* Get back to a state vector representation */
-  MapFieldForw(field,F); //MapScalForw(&scal,F);
+#if MHD == YES
+  data->hydro->boundary->ReconstructVcField(data->hydro->Vc);
+#endif //MHD == YES
+  MapFieldForw(fieldResidual,F); //MapScalForw(&scal,F);
 
+//idfx::cout << "Exiting SNESFunction" << std::endl;
   return 0;
 }
 
@@ -289,7 +271,7 @@ static PetscErrorCode SNESFunctionCallback(SNES snes, Vec x, Vec F, void *ctx)
 //   ------------------------------------------------------------------------ */
 //
 PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B) {
-
+//idfx::cout << "Entering SNESJacobian" << std::endl;
   /* Input/Output variables */
   PetscErrorCode ierr;
   PetscScalar *X_v;
@@ -314,7 +296,7 @@ PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B) {
       }
     }
       
-//    currentlyConstructingJacobian=PETSC_TRUE;
+    currentlyConstructingJacobian=PETSC_TRUE;
     ierr = VecDuplicate(X,&Xinc); 
     ierr = VecDuplicate(X,&F); 
     ierr = VecDuplicate(X,&Finc); 
@@ -346,7 +328,7 @@ PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B) {
 
     for (i=0 ; i < Ntot ; i++){idx[i]=i;}
     ierr = MatSetValues(J,Ntot,idx,Ntot,idx,A,INSERT_VALUES); 
-//    currentlyConstructingJacobian=PETSC_FALSE;
+    currentlyConstructingJacobian=PETSC_FALSE;
     free (A) ; free(idx) ;
 
   }
@@ -359,6 +341,7 @@ PetscErrorCode Newton::SNESJacobian(SNES snes,Vec X,Mat J, Mat B) {
   ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY); 
   ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY); 
 
+//idfx::cout << "Exiting SNESJacobian" << std::endl;
   return 0;
 }
 
@@ -409,63 +392,70 @@ PetscErrorCode Newton::SNESMonitorFunction(SNES snes, PetscInt its, PetscReal rn
   ierr = SNESGetFunction(snes,&F,PETSC_NULLPTR,PETSC_NULLPTR);
 
   /* User decides what he wants to output to terminal */
-  MapFieldBack(X,data->hydro->Vc); //MapScalBack(X,&scal);
-  ProblemMonitor(data->hydro->Vc, constraints, monitor, Nconstraints, &Nmonitors);
+  MapFieldBack(X,fieldMonitor); //MapScalBack(X,&scal);
+  ProblemMonitor(fieldMonitor, constraints, monitor, Nconstraints, &Nmonitors);
   
   /* Check the residual norm and state vector */
   idfx::cout << std::endl;
-  idfx::cout << "It =" << it << "|| Residual Norm = " << rnorm << std::endl;
-  idfx::cout << "        ||    Guess Norm =" << xnorm << std::endl;
-  idfx::cout << "        ||  State Vector =";
+  idfx::cout << "It =" << std::setw(4) << it << " || Residual Norm = " << rnorm << std::endl;
+  idfx::cout << "         ||    Guess Norm = " << xnorm << std::endl;
+  idfx::cout << "         ||  State Vector = ";
   for (i=0 ; i < Nmonitors ; i++){
     idfx::cout << monitor(i);
   }
   idfx::cout << std::endl;
 
-//  if (idfx::prank==0){
-//    if (it == 0){ht=fopen("Newtonconvergence.dat","w");}
-//    else{ht=fopen("Newtonconvergence.dat","a");}
-//    fprintf(ht,"%3d %20.16f",it,rnorm);
-////    MPI_Fprintf(ht,"%3d %20.16f",it,rnorm);
-//    for (i=0 ; i < Nmonitors ; i ++){
-////      MPI_Fprintf(ht," %20.16f",monitor(i));
-//      fprintf(ht," %20.16f",monitor(i));
-//    }
-////    MPI_Fprintf(ht,"\n");
-//    fprintf(ht,"\n");
-//    fclose(ht);
-//  }
-//
-//  /* Dump Current Newton guess */
+  if (idfx::prank==0){
+    if (it == 0){ht=fopen("Newtonconvergence.dat","w");}
+    else{ht=fopen("Newtonconvergence.dat","a");}
+    fprintf(ht,"%3d %20.16f",it,rnorm);
+//    MPI_Fprintf(ht,"%3d %20.16f",it,rnorm);
+    for (i=0 ; i < Nmonitors ; i ++){
+//      MPI_Fprintf(ht," %20.16f",monitor(i));
+      fprintf(ht," %20.16f",monitor(i));
+    }
+//    MPI_Fprintf(ht,"\n");
+    fprintf(ht,"\n");
+    fclose(ht);
+  }
+
+  /* Dump Current Newton guess */
 //  sprintf(iterationf,"%s%3.3d",SNESIterationFile,it);
 //  SNESWriteVec(X,it,iterationf);
-//
-//  /* Dump Current Residual to file */
+  SNESWriteVec(X,it,SNESIterationFile);
+
+  /* Dump Current Residual to file */
 //  sprintf(residualf,"%s%3.3d",SNESResidualFile,it);
 //  SNESWriteVec(F,it,residualf);
-//
-//  /* Increment the current Newton guess iteration number by one */
-//  newtonGuessIts += 1;
+  SNESWriteVec(F,it,SNESResidualFile);
+
+  /* Increment the current Newton guess iteration number by one */
+  newtonGuessIts += 1;
 
   return 0;
 }
 
-/* ------------------------------------------------------------------------ 
-                       Write State Vectors to file
-              They contain physical fields + extra variables
-   ------------------------------------------------------------------------ */
-void Newton::SNESReadVec(Vec X, std::string myfile){
+///* ------------------------------------------------------------------------ 
+//                       Write State Vectors to file
+//              They contain physical fields + extra variables
+//   ------------------------------------------------------------------------ */
+//void Newton::SNESReadVec(Vec X, std::string myfile){
+//
+//  DumpImage image(myfile, &(*data));
+//  MapFieldForw(data->hydro->Vc, X);
+////  MapScalForw(data, X);
+//  //destroy data?
+//}
 
-  DumpImage image(myfile, &(*data));
-  MapFieldForw(data->hydro->Vc, X);
-//  MapScalForw(data, X);
-  //destroy data?
-}
-
-void Newton::SNESWriteVec(Vec X, PetscInt it, std::string myfile){
-
+void Newton::SNESWriteVec(Vec X, PetscInt it, std::string myFile){
+  Copy(fieldSaved,data->hydro->Vc);
+//ShowVc();
   MapFieldBack(X, data->hydro->Vc);
-  data->dump->Write(*output);
+#if MHD == YES
+  data->hydro->boundary->ReconstructVcField(data->hydro->Vc);
+#endif //MHD == YES
+  data->dump->Write(*output, myFile, it);
+  Copy(data->hydro->Vc, fieldSaved);
 //  MapScalBack(X,&scal); 
 //  scal.its=it; /* set scalars, including current snes iteration */
 //  scal.time=0.;
@@ -492,3 +482,21 @@ void Newton::ShowConfig(struct Scal *scal){
   idfx::cout << SEPARATOR << std::endl;
 }
 
+//void Newton::ShowX(Vec X) {
+//  int nz, ny, nx;
+//  nz = data->np_tot[KDIR];
+//  ny = data->np_tot[JDIR];
+//  nx = data->np_tot[IDIR];
+//  const PetscScalar *X_v;
+//  int ierr;
+//  ierr = VecGetArrayRead(X,&X_v);
+//
+//  idefix_for("MapFieldBack", 0,nvar,
+//             0,data->np_tot[KDIR],
+//             0,data->np_tot[JDIR],
+//             0,data->np_tot[IDIR],
+//    KOKKOS_LAMBDA (int v, int k, int j, int i) {
+//      idfx::cout << X_v[UNRAVEL(v,k,j,i)] << std::endl;
+//    });
+//  ierr = VecRestoreArrayRead(X,&X_v);
+//}

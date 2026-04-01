@@ -8,46 +8,47 @@
 #include "newton.hpp"
 #include "output.hpp"
 
-#define UNRAVEL(v,k,j,i) v*nvar*nz*ny*nx + k*nz*ny*nx + j*ny*nx + i*nx
-
-void Newton::MapFieldForw(IdefixArray4D<real> Vc, Vec X) {
-//  int nz, ny, nx;
-//  nz = data->np_int[KDIR];
-//  ny = data->np_int[JDIR];
-//  nx = data->np_int[IDIR];
-//  const PetscScalar *X_v;
-//  PetscErrorCode ierr;
-//  ierr = VecGetArrayRead(X,&X_v);
-//
-//  idefix_for("ConsToPrim", 0,nvar,
-//             0,data->np_tot[KDIR],
-//             0,data->np_tot[JDIR],
-//             0,data->np_tot[IDIR],
-//    KOKKOS_LAMBDA (int v, int k, int j, int i) {
-//      Vc(v,k,j,i) = X_v[UNRAVEL(v,k,j,i)];
-//    });
-//
-//  ierr = VecRestoreArrayRead(X,&X_v);
-}
+#define UNRAVEL(v,k,j,i) v*nz*ny*nx + k*ny*nx + j*nx + i
+//#define UNRAVEL(v,k,j,i) v*nvar*nz*ny*nx + k*nz*ny*nx + j*ny*nx + i*nx
 
 void Newton::MapFieldBack(Vec X, IdefixArray4D<real> Vc) {
-//  int nz, ny, nx;
-//  nz = data->np_int[KDIR];
-//  ny = data->np_int[JDIR];
-//  nx = data->np_int[IDIR];
-//  PetscScalar *X_v;
-//  PetscErrorCode ierr;
-//  ierr = VecGetArray(X,&X_v);
-//
-//  idefix_for("ConsToPrim", 0,nvar,
-//             0,data->np_tot[KDIR],
-//             0,data->np_tot[JDIR],
-//             0,data->np_tot[IDIR],
-//    KOKKOS_LAMBDA (int v, int k, int j, int i) {
-//      X_v[UNRAVEL(v,k,j,i)] = Vc(v,k,j,i);
-//    });
-//
-//  ierr = VecRestoreArray(X,&X_v);
+  int nz, ny, nx;
+  nz = data->np_tot[KDIR];
+  ny = data->np_tot[JDIR];
+  nx = data->np_tot[IDIR];
+  const PetscScalar *X_v;
+  PetscErrorCode ierr;
+  ierr = VecGetArrayRead(X,&X_v);
+
+  idefix_for("MapFieldBack", 0,nvar,
+             0,data->np_tot[KDIR],
+             0,data->np_tot[JDIR],
+             0,data->np_tot[IDIR],
+    KOKKOS_LAMBDA (int v, int k, int j, int i) {
+      Vc(v,k,j,i) = X_v[UNRAVEL(v,k,j,i)];
+    });
+
+  ierr = VecRestoreArrayRead(X,&X_v);
+}
+
+void Newton::MapFieldForw(IdefixArray4D<real> Vc, Vec X) {
+  int nz, ny, nx;
+  nz = data->np_tot[KDIR];
+  ny = data->np_tot[JDIR];
+  nx = data->np_tot[IDIR];
+  PetscScalar *X_v;
+  PetscErrorCode ierr;
+  ierr = VecGetArray(X,&X_v);
+
+  idefix_for("MapFieldForw", 0,nvar,
+             0,data->np_tot[KDIR],
+             0,data->np_tot[JDIR],
+             0,data->np_tot[IDIR],
+    KOKKOS_LAMBDA (int v, int k, int j, int i) {
+      X_v[UNRAVEL(v,k,j,i)] = Vc(v,k,j,i);
+    });
+
+  ierr = VecRestoreArray(X,&X_v);
 }
 
 /* ------------------------------------------------------------------------ 
@@ -71,16 +72,24 @@ void Newton::ProblemMonitor(IdefixArray4D<real> field, IdefixArray1D<real> const
 }
 
 void Newton::PropagateField(real tmax) {
-  data->t = 0.;
+  ResetDNS();
+#if MHD == YES
+  data->hydro->boundary->ReconstructVsField(data->hydro->Vs);
+#endif //MHD == YES
+  data->SetBoundaries();
+//  ShowVc();
+  data->Validate();
   PerformDNS(tmax);
 }
 
 /* Calculate the field components of the rhs residual (Newton solver) */
-void Newton::ComputeSNESFieldResidual(IdefixArray4D<real> field0, IdefixArray1D<real> constraints0, IdefixArray4D<real> field){
+void Newton::ComputeSNESFieldResidual() {
+//idfx::cout << "Entering ComputeSNESFieldResidual" << std::endl;
+//idfx::cout << data->t << std::endl;
+//idfx::cout << data->dt << std::endl;
 
   int i;
   real dt,T,TLC,Cz,sz;
-  IdefixArray4D<real> Tfield;
   
   if (fixedPoint){
     T=1.; /* integrate for a fixed time */
@@ -102,17 +111,21 @@ void Newton::ComputeSNESFieldResidual(IdefixArray4D<real> field0, IdefixArray1D<
   /* Finally, compute the residual by taking the difference between
      V(T) translated back in space and V(0) */
 
-  idefix_for("ConsToPrim",
+#if MHD == YES
+  data->hydro->boundary->ReconstructVcField(data->hydro->Vc);
+#endif //MHD == YES
+  idefix_for("ComputeSNESFieldResidual",
              0,nvar,
              0,data->np_tot[KDIR],
              0,data->np_tot[JDIR],
              0,data->np_tot[IDIR],
     KOKKOS_LAMBDA (int v, int k, int j, int i) {
-      field(v,k,j,i) = data->hydro->Vc(v,k,j,i) - field0(v,k,j,i);
+      fieldResidual(v,k,j,i) = data->hydro->Vc(v,k,j,i) - fieldInitial(v,k,j,i);
     });
+//idfx::cout << "Exiting ComputeSNESFieldResidual" << std::endl;
 }
 
 
-void Newton::ComputeSNESScalarResidual(IdefixArray4D<real> field0, IdefixArray1D<real> constraints0, IdefixArray1D<real> constraints){
+void Newton::ComputeSNESScalarResidual() {
 }
 

@@ -24,6 +24,7 @@ class TimeIntegrator {
 
   // Do one integration cycle
   void Cycle(DataBlock &);
+  int64_t ncycles;        // # of cycles
 
   // check whether we have reached the maximum runtime
   bool CheckForMaxRuntime();
@@ -52,7 +53,6 @@ class TimeIntegrator {
   real cfl;   // CFL number
   real cflMaxVar; // Max CFL variation number
   real maxdivB{0};   // Maximum allowed divB
-  int64_t ncycles;        // # of cycles
 
   double computeLastLog;  // Timer for actual computeTime
 

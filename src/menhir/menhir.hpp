@@ -23,11 +23,16 @@ class Menhir {
  public:
   Menhir(int, char**);
   void Initialise(int, char**);
+  void ShowConfig();
   void PerformDNS(real);
+  void InitDNS();
+  void ResetDNS();
   void PerformNewton();
   void PerformStability();
   void PerformContinuation();
   void Finalise();
+  void ShowVc();
+  void Copy(IdefixArray4D<real>&, IdefixArray4D<real>&);
   std::unique_ptr<DataBlock> data;
   std::unique_ptr<Output> output;
 
@@ -35,10 +40,12 @@ class Menhir {
   bool haveNewton;
   bool haveStability;
   bool haveContinuation;
+
+  int nvar;
  private:
+  real first_dt;
   bool initKokkosBeforeMPI;
   int returnCode;
-  real tstop;
   Kokkos::Timer timer;
 
   std::unique_ptr<Input> input;

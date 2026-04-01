@@ -48,6 +48,7 @@ Input::Input(int argc, char* argv[] ) {
   haveNewton = false;
   haveStability = false;
   haveContinuation = false;
+  isSilent = true;
 
   // Tell the system we want to catch the SIGUSR2 signals
   signal(SIGUSR2, signalHandler);
@@ -131,6 +132,9 @@ void Input::ParseCommandLine(int argc, char **argv) {
     }
     else if(std::string(argv[i]) == "-continuation") {
       this->haveContinuation = true;
+    }
+    else if(std::string(argv[i]) == "-silence") {
+      this->isSilent = false;
     }
     // MPI decomposition argument
     else if(std::string(argv[i]) == "-dec") {
@@ -355,41 +359,39 @@ bool Input::CheckBlock(std::string blockName) {
 }
 
 void Input::PrintLogo() {
-  idfx::cout << "                                  .:HMMMMHn:.  ..:n.."<< std::endl;
-  idfx::cout << "                                .H*'``     `'%HM'''''!x."<< std::endl;
-  idfx::cout << "         :x                    x*`           .(MH:    `#h."<< std::endl;
-  idfx::cout << "        x.`M                   M>        :nMMMMMMMh.     `n."<< std::endl;
-  idfx::cout << "         *kXk..                XL  nnx:.XMMMMMMMMMMML   .. 4X."<< std::endl;
-  idfx::cout << "          )MMMMMx              'M   `^?M*MMMMMMMMMMMM:HMMMHHMM."<< std::endl;
-  idfx::cout << "          MMMMMMMX              ?k    'X ..'*MMMMMMM.#MMMMMMMMMx"<< std::endl;
-  idfx::cout << "         XMMMMMMMX               4:    M:MhHxxHHHx`MMx`MMMMMMMMM>"<< std::endl;
-  idfx::cout << "         XM!`   ?M                `x   4MM'`''``HHhMMX  'MMMMMMMM"<< std::endl;
-  idfx::cout << "         4M      M                 `:   *>     `` .('MX   '*MMMM'"<< std::endl;
-  idfx::cout << "          MX     `X.nnx..                        ..XMx`     'M*X"<< std::endl;
-  idfx::cout << "           ?h.    ''```^'*!Hx.     :Mf     xHMh  M**MMM      4L`"<< std::endl;
-  idfx::cout << "            `*Mx           `'*n.x. 4M>   :M` `` 'M    `       %"<< std::endl;
-  idfx::cout << "             '%                ``*MHMX   X>      !"<< std::endl;
-  idfx::cout << "            :!                    `#MM>  X>      `   :x"<< std::endl;
-  idfx::cout << "           :M                        ?M  `X     .  ..'M"<< std::endl;
-  idfx::cout << "           XX                       .!*X  `x   XM( MMx`h"<< std::endl;
-  idfx::cout << "          'M>::                        `M: `+  MMX XMM `:"<< std::endl;
-  idfx::cout << "          'M> M                         'X    'MMX ?MMk.Xx.."<< std::endl;
-  idfx::cout << "          'M> ?L                     ...:!     MMX.H**'MMMM*h"<< std::endl;
-  idfx::cout << "           M>  #L                  :!'`MM.    . X*`.xHMMMMMnMk."<< std::endl;
-  idfx::cout << "           `!   #h.      :L           XM'*hxHMM*MhHMMMMMMMMMM'#h"<< std::endl;
-  idfx::cout << "           +     XMh:    4!      x   :f   MM'   `*MMMMMMMMMM%  `X"<< std::endl;
-  idfx::cout << "           M     Mf``tHhxHM      M>  4k xxX'      `#MMMMMMMf    `M .>"<< std::endl;
-  idfx::cout << "          :f     M   `MMMMM:     M>   M!MMM:         '*MMf'     'MH*"<< std::endl;
-  idfx::cout << "          !     Xf   'MMMMMX     `X   X>'h.`          :P*Mx.   .d*~.."<< std::endl;
-  idfx::cout << "        :M      X     4MMMMM>     !   X~ `Mh.      .nHL..M#'%nnMhH!'`"<< std::endl;
-  idfx::cout << "       XM      d>     'X`'**h     'h  M   ^'MMHH+*'`  ''''   `'**'"<< std::endl;
-  idfx::cout << "    %nxM>      *x+x.:. XL.. `k     `::X"<< std::endl;
-  idfx::cout << ":nMMHMMM:.  X>  Mn`*MMMMMHM: `:     ?MMn."<< std::endl;
-  idfx::cout << "    `'**MML M>  'MMhMMMMMMMM  #      `M:^*x"<< std::endl;
-  idfx::cout << "         ^*MMttnnMMMMMMMMMMMH>.        M:.4X"<< std::endl;
-  idfx::cout << "                        `MMMM>X   (   .MMM:MM!   ."<< std::endl;
-  idfx::cout << "                          `'''4x.dX  +^ `''MMMMHM?L.."<< std::endl;
-  idfx::cout << "                                ``'           `'`'`'`"<< std::endl;
+
+  idfx::cout << "                                              %#*:       +%%" << std::endl;
+  idfx::cout << "                                              :...:    ::::." << std::endl;
+  idfx::cout << "                                                .::.-.-:.." << std::endl;
+  idfx::cout << "                                                  .::..:" << std::endl;
+  idfx::cout << "                                                  .:.%#." << std::endl;
+  idfx::cout << "                                               * ..-:.-.." << std::endl;
+  idfx::cout << "                                              ...--:-=-=:.-" << std::endl;
+  idfx::cout << "                                               .....:.=" << std::endl;
+  idfx::cout << "                                              ........." << std::endl;
+  idfx::cout << "                                              ....-:..." << std::endl;
+  idfx::cout << "                                             .:=.:.:--.:" << std::endl;
+  idfx::cout << "                                            ..:=.:...:-.          =+++++==" << std::endl;
+  idfx::cout << "                                           ....=.:.:::::.-:--===+==========-----=" << std::endl;
+  idfx::cout << "                                        -::::::-....::-::.++===--=====--===------:=" << std::endl;
+  idfx::cout << "                                -------------:-:.::.=+===----------=------==------:---" << std::endl;
+  idfx::cout << "                          ----:----------------------------------====------=-------:---:" << std::endl;
+  idfx::cout << "                ::-----::----:-:----------------==---------------=====----===--------:-::.:" << std::endl;
+  idfx::cout << "             ::--=-::::::::::-::------------==-----------------======-=--=====------::.:....." << std::endl;
+  idfx::cout << "          :----+:-:::::::--+:---========-------=--------=========+-========--::.........." << std::endl;
+  idfx::cout << "       ..:--:::-:-::::.::::---+-=======-------------======++++++===:=========-:...:......" << std::endl;
+  idfx::cout << "    .....:--::::=::::*::::------======------------=====++++++++++++========---....:......" << std::endl;
+  idfx::cout << "  .......:--:::::::--*::--::::--+=====------======+++++++++++++==++=======---:.....:.-..." << std::endl;
+  idfx::cout << "..::....:--::::::-::#*::--:::--===========++++++++++++++++++++++++++==+==---:............" << std::endl;
+  idfx::cout << " --=:.:::--:::::::+:-=-------=====-==+++++++++++++++++******+++++++++++===--:::::::.::..-" << std::endl;
+  idfx::cout << "      -=+++=---:::::::-+--==----======++=+#+++++++++++++++*****+++++++++++*+**+=----::::=-::-" << std::endl;
+  idfx::cout << "         +*#+--------====*+++===+++++++++++#++++++++++++*****++++++++****++*+++=-----::::=-" << std::endl;
+  idfx::cout << "               --+=====+***++++++++++++++*++===++++++++++++++++*+++******++=*+==------:::+" << std::endl;
+  idfx::cout << "                  ++====****++*+++**+++++*+==*==+++++++++++++*********#***+=*+==-------=" << std::endl;
+  idfx::cout << "                       +++**#+++++++++***++=====++********#######*#####***++*=++++=--+" << std::endl;
+  idfx::cout << "                            **+*+++******++===+=++********###########*#********" << std::endl;
+  idfx::cout << "                                       ***+++++++*#**##############****#" << std::endl;
+  idfx::cout << "                                            +++*#***###############" << std::endl;
   idfx::cout << std::endl;
   PrintVersion();
   idfx::cout << std::endl;

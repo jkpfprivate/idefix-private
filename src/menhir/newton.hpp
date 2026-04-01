@@ -10,10 +10,9 @@
 
 #include <petscsnes.h>
 #include "menhir.hpp"
-//#include "dataBlock.hpp"
-//#include "problem.h"
 
 #define SEPARATOR "---------------------------------------------------------------"
+#define UNRAVEL(v,k,j,i) v*nz*ny*nx + k*ny*nx + j*nx + i
 
 static PetscErrorCode SNESJacobianCallback(SNES, Vec, Mat, Mat, void*);
 static PetscErrorCode SNESFunctionCallback(SNES, Vec, Vec, void *);
@@ -51,32 +50,30 @@ class Newton : public Menhir {
 
   /* I/O and monitoring routines */
   PetscErrorCode SNESMonitorFunction(SNES, PetscInt, PetscReal);
-
-  void print(IdefixArray4D<real> arr);
-  IdefixArray4D<real> newtonGuess;
-
  private:
   
   /* Initial guess function */
   PetscErrorCode SNESInitialGuess(Vec, void*);
   
-  void SNESReadVec(Vec, std::string);
+//  void SNESReadVec(Vec, std::string);
   void SNESWriteVec(Vec, PetscInt, std::string);
   void ShowConfig(struct Scal*);
+//  void ShowX(Vec X);
   
   void MapFieldForw(IdefixArray4D<real>, Vec);
   void MapFieldBack(Vec, IdefixArray4D<real>);
   void ProblemMonitor(IdefixArray4D<real>, IdefixArray1D<real>, IdefixArray1D<real>, int, int*);
   void PropagateField(real);
-  void ComputeSNESFieldResidual(IdefixArray4D<real>, IdefixArray1D<real>, IdefixArray4D<real>);
-  void ComputeSNESScalarResidual(IdefixArray4D<real>, IdefixArray1D<real>, IdefixArray1D<real>);
+  void ComputeSNESFieldResidual();
+  void ComputeSNESScalarResidual();
 
 //  /* Constraints data to formulate the augmented system */
-  IdefixArray4D<real> field;
-  IdefixArray4D<real> field0;
-  IdefixArray4D<real> field1;
+  IdefixArray4D<real> fieldResidual;
+  IdefixArray4D<real> fieldInitial;
+  IdefixArray4D<real> fieldNewtonGuess;
+  IdefixArray4D<real> fieldMonitor;
+  IdefixArray4D<real> fieldSaved;
   int newtonGuessIts;
-  int nvar;
   
   /* Newton Flag */
   int NewtonFlag;

@@ -44,7 +44,7 @@
 #define SNESKSPatol (double) 1e-50 
 #define SNESKSPdtol (double) 100.0 
 #define SNESKSPNrestart Ntot
-#define SNESKSPNitmax 100
+#define SNESKSPNitmax 50
 
 /* Matrix-Free Solver Configuration */
 

@@ -226,6 +226,8 @@ Dump::Dump(Input &input, DataBlock *datain) {
     outputDirectory = "./";
   }
   Init(datain);
+
+  isSilent = input.isSilent;
 }
 
 Dump::Dump(DataBlock *datain) {
@@ -808,8 +810,11 @@ bool Dump::Read(Output& output, int readNumber ) {
   return(true);
 }
 
-
 int Dump::Write(Output& output) {
+  return Write(output, "dump", -1);
+}
+
+int Dump::Write(Output& output, std::string fname, int myFileNumber) {
   fs::path filename;
   char fieldName[NAMESIZE+1]; // +1 is just in case
   int nx[3];
@@ -824,7 +829,7 @@ int Dump::Write(Output& output) {
 
   idfx::pushRegion("Dump::Write");
 
-  idfx::cout << "Dump: Write file n " << dumpFileNumber << "..." << std::flush;
+  if (not isSilent) idfx::cout << "Dump: Write file n " << dumpFileNumber << "..." << std::flush;
 
   // Reset timer
   timer.reset();
@@ -832,8 +837,9 @@ int Dump::Write(Output& output) {
 
   // Set filenames
   std::stringstream ssdumpFileNum,ssFileName;
-  ssdumpFileNum << std::setfill('0') << std::setw(4) << dumpFileNumber;
-  ssFileName << "dump." << ssdumpFileNum.str() << ".dmp";
+  if (myFileNumber < 0) ssdumpFileNum << std::setfill('0') << std::setw(4) << dumpFileNumber;
+  else ssdumpFileNum << std::setfill('0') << std::setw(4) << myFileNumber;
+  ssFileName << fname << "." << ssdumpFileNum.str() << ".dmp";
   filename = outputDirectory/ssFileName.str();
 
   dumpFileNumber++;   // For next one
@@ -977,7 +983,7 @@ int Dump::Write(Output& output) {
 #endif
 
 
-  idfx::cout << "done in " << timer.seconds() << " s." << std::endl;
+  if (not isSilent) idfx::cout << "done in " << timer.seconds() << " s." << std::endl;
   idfx::popRegion();
   // One day, we will have a return code.
 

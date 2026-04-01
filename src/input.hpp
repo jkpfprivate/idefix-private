@@ -40,6 +40,7 @@ class Input {
   bool haveNewton;
   bool haveStability;
   bool haveContinuation;
+  bool isSilent;
 
   template<typename T>
   T Get(std::string, std::string, int);                 ///< read a variable from the input file

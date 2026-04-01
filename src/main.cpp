@@ -60,14 +60,18 @@ int main( int argc, char* argv[] ) {
   SlepcInitialize(&argc,&argv,(char *)0,help);
 
   Menhir menhir(argc, argv);
-  if (menhir.haveDNS) menhir.PerformDNS(-1.);
+  menhir.ShowConfig();
+  if (menhir.haveDNS) {
+    menhir.InitDNS();
+    menhir.PerformDNS(-1.);
+  }
   else if (menhir.haveNewton) {
     Newton newton(argc, argv);
     newton.Solve();
   }
   else if (menhir.haveStability) menhir.PerformStability();
   else if (menhir.haveContinuation) menhir.PerformContinuation();
-IDEFIX_ERROR("Here I am");
+  else idfx::cout << "Main: no action specified. Returning to being a standing stone." << std::endl;
 
   ierr = SlepcFinalize();
   ierr = PetscFinalize();// CHKERRV(ierr);

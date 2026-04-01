@@ -47,13 +47,13 @@ void Menhir::Initialise(int argc, char* argv[]) {
     ///////////////////////////////
 
     input = std::make_unique<Input>(argc, argv);
-    input->PrintLogo();
-    idfx::cout << "Main: initialization stage." << std::endl;
 
     haveDNS = input->haveDNS;
     haveNewton = input->haveNewton;
     haveStability = input->haveStability;
     haveContinuation = input->haveContinuation;
+
+//    idfx::cout << "Main: initialization stage." << std::endl;
 
     // Init the units when needed
     idfx::units.Init(*input);
@@ -71,19 +71,25 @@ void Menhir::Initialise(int argc, char* argv[]) {
 
     data = std::make_unique<DataBlock>(*grid, *input);
     Tint = std::make_unique<TimeIntegrator>(*input, *data);
+    Tint->isSilent = input->isSilent;
     #ifdef WITH_PYTHON
       pydefix = std::make_unique<Pydefix>(*input);
     #endif
     output = std::make_unique<Output>(*input, *data);
     mysetup = std::make_unique<Setup>(*input, *grid, *data, *output);
+    first_dt = data->dt;
+    nvar = data->hydro->Vc.extent(0);
+}
 
+void Menhir::ShowConfig() {
+    input->PrintLogo();
     idfx::cout << "Main: initialisation finished." << std::endl;
-
+ 
     char host[1024];
     gethostname(host,1024);
-
+ 
     idfx::cout << "Main: running on " << std::string(host) << std::endl;
-
+ 
     ///////////////////////////////
     // Show configuration
     ///////////////////////////////
@@ -99,7 +105,13 @@ void Menhir::Initialise(int argc, char* argv[]) {
     #ifdef WITH_PYTHON
     pydefix->ShowConfig();
     #endif
+    if (haveDNS) idfx::cout << "Main: performing a DNS." << std::endl;
+    if (haveNewton) idfx::cout << "Main: performing a Newton algorithm." << std::endl;
+    if (haveContinuation) idfx::cout << "Main: performing a continuation." << std::endl;
+    if (haveStability) idfx::cout << "Main: performing a stability analysis." << std::endl;
+}
 
+void Menhir::InitDNS() {
     ///////////////////////////////
     // Initial conditions (or restart)
     ///////////////////////////////
@@ -158,13 +170,12 @@ void Menhir::PerformDNS(real stopping_time) {
     ///////////////////////////////
     // Main Loop
     ///////////////////////////////
-    idfx::cout << "Main: Cycling Time Integrator..." << std::endl;
+    if (haveDNS) idfx::cout << "Main: Cycling Time Integrator..." << std::endl;
 
     output->ResetTimer();
 
-    int tstop;
-    if (stopping_time < 0.) tstop = input->Get<real>("TimeIntegrator","tstop",0);
-    else tstop = stopping_time;
+    real tstop = (stopping_time < 0.) ? input->Get<real>("TimeIntegrator","tstop",0) : stopping_time;
+    data->dt = first_dt;
 
     while(data->t < tstop) {
       if(tstop-data->t < data->dt) data->dt = tstop-data->t;
@@ -216,6 +227,7 @@ void Menhir::PerformDNS(real stopping_time) {
     double perfs = timer.seconds() / grid->np_int[IDIR] / grid->np_int[JDIR]
                             / grid->np_int[KDIR] / Tint->GetNCycles() * idfx::psize;
 
+    if (haveDNS) {
     idfx::cout << "Main: Reached t=" << data->t << std::endl;
     idfx::cout << "Main: Completed in ";
     if (n_days > 0) {
@@ -252,7 +264,7 @@ void Menhir::PerformDNS(real stopping_time) {
     idfx::cout << "Main: ";
     idfx::cout << "Perfs are " << std::scientific << 1/perfs << " cell updates/second" << std::endl;
     #ifdef WITH_MPI
-      idfx::cout << "MPI overhead represents "
+    idfx::cout << "MPI overhead represents "
                  << static_cast<int>(100.0*idfx::mpiCallsTimer/timer.seconds())
                  << "% of total run time." << std::endl;
     #endif
@@ -262,10 +274,34 @@ void Menhir::PerformDNS(real stopping_time) {
               << "% of total run time." << std::endl;
     // Show profiler output
     idfx::prof.Show();
+    }
 }
 
-void Menhir::PerformNewton() {
-  idfx::cout << "I've been asked to perform Newton but it's not yet coded." << std::endl;
+void Menhir::ShowVc() {
+  idefix_for("MapFieldBack", 0,nvar,
+             0,data->np_tot[KDIR],
+             0,data->np_tot[JDIR],
+             0,data->np_tot[IDIR],
+    KOKKOS_LAMBDA (int v, int k, int j, int i) {
+      idfx::cout << data->hydro->Vc(v,k,j,i) << std::endl;
+    });
+}
+
+void Menhir::ResetDNS() {
+  data->t = 0.;
+  data->dt = first_dt;
+  Tint->ncycles = 0;
+}
+
+void Menhir::Copy(IdefixArray4D<real> &out, IdefixArray4D<real> &in) {
+  idefix_for("Menhir_Copy",
+             0, nvar,
+             0, data->np_tot[KDIR],
+             0, data->np_tot[JDIR],
+             0, data->np_tot[IDIR],
+             KOKKOS_LAMBDA(int v, int k, int j, int i) {
+               out(v,k,j,i) = in(v,k,j,i);
+             }); 
 }
 
 void Menhir::PerformStability() {

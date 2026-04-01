@@ -41,6 +41,7 @@ class Boundary {
   void SetBoundaries(real);                         ///< Set the ghost zones in all directions
   void EnforceBoundaryDir(real, int);             ///< write in the ghost zone in specific direction
   void ReconstructVcField(IdefixArray4D<real> &);  ///< reconstruct cell-centered magnetic field
+  void ReconstructVsField(IdefixArray4D<real> &);  ///< reconstruct interface magnetic field
   void ReconstructNormalField(int dir);           ///< reconstruct normal field using divB=0
 
   void EnforceFluxBoundaries(int,real);      ///< Apply boundary condition conditions to the fluxes
@@ -397,6 +398,28 @@ void Boundary<Phys>::ReconstructVcField(IdefixArray4D<real> &Vc) {
       D_EXPAND( Vc(BX1,k,j,i) = HALF_F * (Vs(BX1s,k,j,i) + Vs(BX1s,k,j,i+1)) ;  ,
                 Vc(BX2,k,j,i) = HALF_F * (Vs(BX2s,k,j,i) + Vs(BX2s,k,j+1,i)) ;  ,
                 Vc(BX3,k,j,i) = HALF_F * (Vs(BX3s,k,j,i) + Vs(BX3s,k+1,j,i)) ;  )
+    }
+  );
+
+  idfx::popRegion();
+}
+
+
+template<typename Phys>
+void Boundary<Phys>::ReconstructVsField(IdefixArray4D<real> &Vs) {
+  idfx::pushRegion("Boundary::ReconstructVsField");
+
+  IdefixArray4D<real> Vc=this->Vc;
+
+  // Reconstruct cell interface field
+  idefix_for("ReconstructVsMagField",
+             data->nghost[KDIR], data->np_int[KDIR] + data->nghost[KDIR] + 1,
+             data->nghost[JDIR], data->np_int[JDIR] + data->nghost[JDIR] + 1,
+             data->nghost[IDIR], data->np_int[IDIR] + data->nghost[IDIR] + 1,
+    KOKKOS_LAMBDA (int k, int j, int i) {
+      D_EXPAND( Vs(BX1s,k,j,i) = HALF_F * (Vc(BX1,k,j,i) + Vc(BX1,k,j,i-1)) ;  ,
+                Vs(BX2s,k,j,i) = HALF_F * (Vc(BX2,k,j,i) + Vc(BX2,k,j-1,i)) ;  ,
+                Vs(BX3s,k,j,i) = HALF_F * (Vc(BX3,k,j,i) + Vc(BX3,k-1,j,i)) ;  )
     }
   );
 
